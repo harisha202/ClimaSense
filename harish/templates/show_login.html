@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Weather App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background: url('https://wallpapers.com/images/hd/perfect-weather-with-gradient-sky-ym0nn79vhoqg34v3.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .form-container {
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 40px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            text-align: left;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 30px;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: inline-block;
+            width: 100px;
+            font-size: 16px;
+            color: #fff;
+            margin-right: 20px;
+        }
+
+        input {
+            padding: 12px;
+            width: 100%;
+            max-width: 300px;
+            border-radius: 6px;
+            border: 2px solid #ff7e5f;
+            font-size: 16px;
+            background-color: rgba(255, 255, 255, 0.7);
+            color: #2c3e50;
+        }
+
+        input:focus {
+            border-color: #feb47b;
+            outline: none;
+        }
+
+        .error {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 12px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:active {
+            background-color: #388e3c;
+        }
+
+        .login-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: rgba(76, 175, 80, 0.2);
+            border-radius: 6px;
+            border: 1px solid rgba(76, 175, 80, 0.4);
+            font-size: 14px;
+            color: #a5d6a7;
+        }
+
+        .login-info strong {
+            color: #81c784;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h1>Login to Weather App</h1>
+        <form id="loginForm" onsubmit="return validateForm(event)">
+            <div class="input-wrapper">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" placeholder="Enter username" required>
+            </div>
+            <span id="usernameError" class="error"></span>
+
+            <div class="input-wrapper">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" placeholder="Enter password" required>
+            </div>
+            <span id="passwordError" class="error"></span>
+
+            <button type="submit">Login</button>
+        </form>
+
+
+    </div>
+
+    <script>
+        function validateForm(event) {
+            event.preventDefault(); 
+
+            let username = document.getElementById("username").value;
+            let password = document.getElementById("password").value;
+            let usernameError = document.getElementById("usernameError");
+            let passwordError = document.getElementById("passwordError");
+
+            // Clear previous errors
+            usernameError.textContent = "";
+            passwordError.textContent = "";
+
+            // Validate fields are not empty
+            if (!username.trim()) {
+                usernameError.textContent = "Username is required";
+                return false;
+            }
+
+            if (!password.trim()) {
+                passwordError.textContent = "Password is required";
+                return false;
+            }
+
+            // Submit to Flask backend
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = "{{ url_for('index') }}";
+                } else {
+                    usernameError.textContent = "Invalid credentials";
+                    passwordError.textContent = "Please try again";
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Login error. Please try again.');
+            });
+
+            return false;
+        }
+    </script>
+</body>
+</html>
