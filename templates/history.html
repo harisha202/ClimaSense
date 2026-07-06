@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Search History - ClimaSense{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* History / Time Warp Theme - 3D */
+    .layer-back {
+        background: radial-gradient(circle at center, #0a0a2a 0%, #000 100%);
+    }
+    
+    .layer-mid {
+        /* Starfield coming at you */
+        background-image: radial-gradient(2px 2px at 40px 60px, #fff, rgba(0,0,0,0)),
+                          radial-gradient(2px 2px at 20px 50px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
+                          radial-gradient(2px 2px at 30px 100px, rgba(255,255,255,0.6), rgba(0,0,0,0));
+        background-repeat: repeat;
+        background-size: 200px 200px;
+        animation: timeWarp 4s linear infinite;
+        transform-origin: center;
+        opacity: 0.6;
+    }
+    
+    .layer-front {
+        /* Faster stars */
+        background-image: radial-gradient(3px 3px at 50px 160px, #fff, rgba(0,0,0,0)),
+                          radial-gradient(2px 2px at 90px 40px, rgba(255,255,255,0.9), rgba(0,0,0,0)),
+                          radial-gradient(2px 2px at 130px 80px, rgba(255,255,255,0.7), rgba(0,0,0,0));
+        background-repeat: repeat;
+        background-size: 300px 300px;
+        animation: timeWarp 2s linear infinite;
+        transform-origin: center;
+    }
+    
+    @keyframes timeWarp {
+        0% { transform: translateZ(-500px) scale(1); opacity: 0; }
+        50% { opacity: 1; }
+        100% { transform: translateZ(200px) scale(3); opacity: 0; }
+    }
+
+    .table tr {
+        transform-style: preserve-3d;
+        transition: transform 0.2s, background 0.2s;
+    }
+
+    .table tr:hover {
+        background: rgba(65, 90, 119, 0.2);
+        transform: translateZ(10px) rotateX(2deg);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+</style>
+{% endblock %}
+
+{% block scene_orbs %}
+<!-- No orbs for history page -->
+{% endblock %}
+
+{% block content %}
+<div style="max-width:800px; margin: 0 auto; padding: 2rem;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem;">
+        <h2>Search History</h2>
+        <button id="clear-history-btn" class="logout-btn" style="background:transparent; color:var(--danger); border:1px solid var(--danger);">Clear History</button>
+    </div>
+    
+    <div class="history-list glass" style="padding:1rem;">
+        <ul id="history-ul" style="list-style:none;">
+            <!-- Populated by JS -->
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadHistory() {
+    try {
+        const res = await fetch('/api/search-history');
+        const data = await res.json();
+        
+        const ul = document.getElementById('history-ul');
+        ul.innerHTML = '';
+        
+        if (data.success && data.history.length > 0) {
+            data.history.forEach(item => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                li.style.padding = '1rem';
+                li.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
+                li.style.display = 'flex';
+                li.style.justifyContent = 'space-between';
+                li.style.alignItems = 'center';
+                
+                const date = new Date(item.searched_at).toLocaleString();
+                
+                li.innerHTML = `
+                    <div>
+                        <strong>${item.city}</strong>
+                        <div style="font-size:0.85rem; color:var(--text-secondary);">${date}</div>
+                    </div>
+                    <a href="/index?city=${encodeURIComponent(item.city)}" style="color:var(--accent); text-decoration:none;"><i class="fa-solid fa-arrow-rotate-right"></i> Search Again</a>
+                `;
+                ul.appendChild(li);
+            });
+        } else {
+            ul.innerHTML = '<li style="padding:1rem; text-align:center;">No recent searches</li>';
+        }
+    } catch(e) {
+        console.error('Error loading history', e);
+    }
+}
+
+document.getElementById('clear-history-btn').addEventListener('click', async () => {
+    if(confirm('Clear all search history?')) {
+        try {
+            const res = await fetch('/api/clear-history', {method:'POST'});
+            const data = await res.json();
+            if(data.success) {
+                loadHistory();
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
+});
+
+document.addEventListener('DOMContentLoaded', loadHistory);
+</script>
+{% endblock %}

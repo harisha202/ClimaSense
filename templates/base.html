@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ClimaSense{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <!-- App CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=2) }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="dark-theme"> <!-- Default to dark, overridden by JS -->
+
+    <div class="bg-image" id="bg-image"></div>
+    <div class="scene-3d" id="scene-3d">
+        <div class="layer layer-back" id="layer-back"></div>
+        <div class="layer layer-mid" id="layer-mid">
+            {% block scene_orbs %}
+            <div class="orb orb-cloud orb-1"></div>
+            <div class="orb orb-cloud orb-2"></div>
+            <div class="orb orb-cloud orb-3"></div>
+            {% endblock %}
+        </div>
+        <div class="layer layer-front" id="layer-front"></div>
+    </div>
+    <div class="bg-overlay"></div>
+
+    <nav class="navbar">
+        <a href="{{ url_for('weather.index') }}" class="nav-brand">
+            <i class="fa-solid fa-cloud-sun"></i> ClimaSense
+        </a>
+        
+        {% if current_user.is_authenticated %}
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="{{ url_for('weather.index') }}">Home</a></li>
+            <li class="nav-item"><a href="{{ url_for('history.history') }}">History</a></li>
+            <li class="nav-item"><a href="{{ url_for('predictions.predictions') }}">Predictions</a></li>
+            <li class="nav-item"><a href="{{ url_for('trends.trends') }}">Trends</a></li>
+            <li>
+                <div class="notification-container" style="position:relative; cursor:pointer;" onclick="document.getElementById('notif-dropdown').classList.toggle('hidden')">
+                    <i class="fa-solid fa-bell" style="font-size:1.2rem;"></i>
+                    <span id="notif-badge" class="notif-badge hidden">0</span>
+                    <div id="notif-dropdown" class="notif-dropdown hidden glass">
+                        <div class="notif-header">Notifications</div>
+                        <ul id="notif-list">
+                            <li class="notif-empty">No new alerts</li>
+                        </ul>
+                    </div>
+                </div>
+            </li>
+            <li>
+                <button class="theme-toggle-btn" id="theme-toggle">
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+            </li>
+            <li>
+                <button class="unit-toggle-btn" id="unit-toggle">°C</button>
+            </li>
+            <li>
+                <a href="{{ url_for('auth.logout') }}" class="logout-btn">Logout</a>
+            </li>
+        </ul>
+        {% endif %}
+    </nav>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Chart JS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    
+    <!-- App JS Base -->
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js', v=2) }}"></script>
+    <script src="{{ url_for('static', filename='js/sockets.js') }}"></script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Sign Up - ClimaSense{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dawn / Sunrise Theme - 3D */
+    .layer-back {
+        background: linear-gradient(to top, #ff7e67, #3a0ca3);
+    }
+    .layer-mid {
+        background: linear-gradient(to top, rgba(255,190,83,0.2), transparent);
+        animation: slowDrift 25s infinite alternate ease-in-out;
+    }
+    
+    .orb-sun {
+        /* Large sun orb */
+        width: 300px;
+        height: 300px;
+        top: 40%;
+        left: 50%;
+        margin-left: -150px; /* center it */
+        background: radial-gradient(circle, #ffbe53, transparent 60%);
+        box-shadow: 0 0 100px #ff7e67;
+        transform: translateZ(-400px);
+        animation: pulseSun 8s infinite alternate ease-in-out;
+    }
+    
+    @keyframes slowDrift {
+        0% { transform: translateZ(-300px) scale(1.2) translateX(-3%); }
+        100% { transform: translateZ(-300px) scale(1.2) translateX(3%); }
+    }
+    @keyframes pulseSun {
+        0% { transform: translateZ(-400px) scale(1); opacity: 0.8; }
+        100% { transform: translateZ(-400px) scale(1.1); opacity: 1; }
+    }
+    
+    .auth-card {
+        transform-style: preserve-3d;
+        background: linear-gradient(135deg, rgba(60, 25, 25, 0.9), rgba(20, 10, 10, 0.95));
+        border: 1px solid rgba(255, 126, 103, 0.3);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,255,255,0.1);
+        padding: 2rem;
+        border-radius: 15px;
+        width: 100%;
+        max-width: 400px;
+        transition: transform 0.1s;
+    }
+    
+    .form-input {
+        background: rgba(0, 0, 0, 0.3);
+        color: #fff5e6;
+        border: 1px solid rgba(255, 126, 103, 0.4);
+    }
+    .form-input:focus { border-color: #ff7e67; outline: none; }
+    .auth-btn { background: linear-gradient(135deg, #ff7e67, #ffbe53); color: #1a0a0a; border: none; }
+</style>
+{% endblock %}
+
+{% block scene_orbs %}
+<div class="orb orb-sun"></div>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card glass">
+        <h2 class="auth-title">Create Account</h2>
+        <form id="signup-form">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" class="form-input" required>
+            </div>
+            <div id="signup-error" class="error-msg text-danger hidden mt-2"></div>
+            <button type="submit" class="auth-btn mt-4">Sign Up</button>
+        </form>
+        <a href="{{ url_for('auth.show_login') }}" class="auth-btn-secondary">Already have an account? Log in</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('signup-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const u = document.getElementById('username').value;
+    const em = document.getElementById('email').value;
+    const p = document.getElementById('password').value;
+    const cp = document.getElementById('confirm_password').value;
+    const err = document.getElementById('signup-error');
+    err.classList.add('hidden');
+    
+    if (p !== cp) {
+        err.textContent = 'Passwords do not match';
+        err.classList.remove('hidden');
+        return;
+    }
+    
+    try {
+        const res = await fetch('/signup', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({username: u, email: em, password: p})
+        });
+        const data = await res.json();
+        if (data.success) {
+            window.location.href = '/';
+        } else {
+            err.textContent = data.message || 'Signup failed';
+            err.classList.remove('hidden');
+        }
+    } catch(e) {
+        err.textContent = 'Server error';
+        err.classList.remove('hidden');
+    }
+});
+</script>
+{% endblock %}

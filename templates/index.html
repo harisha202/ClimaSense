@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}ClimaSense - Weather Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    #dashboard-wrapper {
+        transform-style: preserve-3d;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.4), inset 0 1px 1px rgba(255,255,255,0.3);
+        backdrop-filter: blur(12px);
+        max-width: 900px;
+        margin: 0 auto 2rem;
+        padding: 2rem;
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        transition: transform 0.1s;
+        color: #f8f9fa !important;
+    }
+    
+    #dashboard-wrapper * {
+        color: #f8f9fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="alert-banner" class="alert-banner hidden"></div>
+<div class="search-container">
+    <input type="text" id="city-input" class="search-input" placeholder="Enter city name..." autocomplete="off">
+    <button id="search-btn" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+    <button id="geo-btn" class="geo-btn"><i class="fa-solid fa-map-location-dot"></i></button>
+</div>
+
+<div class="suggestions-row hidden" id="suggestions-row" style="display:flex; justify-content:center; gap:10px; margin-bottom: 20px;">
+    <!-- Suggestion pills injected here by JS -->
+</div>
+
+<div id="loading-spinner" class="hidden" style="text-align:center; padding: 2rem;">
+    <i class="fa-solid fa-spinner fa-spin fa-3x" style="color:var(--accent);"></i>
+</div>
+
+<div id="dashboard-wrapper" class="hidden">
+    <div class="weather-card hidden" id="weather-card" style="margin: 0 auto; padding: 0; position: relative;">
+        <button id="save-city-btn" class="theme-toggle-btn" style="position: absolute; top: 10px; right: 10px;" title="Save City">
+            <i class="fa-regular fa-star"></i>
+        </button>
+        <div style="display:flex; justify-content:center; align-items:flex-start; flex-direction: column;">
+            <h2 id="city-name" style="font-size: 2.5rem; margin-bottom: 0.25rem;"></h2>
+            <div id="city-local-time" style="font-size: 1.1rem; color: #555; margin-bottom: 1rem; font-weight: bold;"></div>
+        </div>
+        <div style="display:flex; justify-content:center; gap: 10px; margin-bottom: 1rem;">
+            <div class="aqi-badge hidden" id="aqi-badge"></div>
+            <div class="aqi-badge hidden" id="comfort-badge"></div>
+        </div>
+        
+        <div>
+            <img id="weather-icon" class="weather-icon" src="" alt="Weather Icon">
+        </div>
+        
+        <div id="temperature" class="temperature"></div>
+        <div id="weather-desc" class="weather-desc"></div>
+        
+        <div class="weather-details-grid">
+            <div class="detail-item">
+                <i class="fa-solid fa-temperature-half"></i>
+                <span>Feels like: <strong id="feels-like"></strong></span>
+            </div>
+            <div class="detail-item">
+                <i class="fa-solid fa-droplet"></i>
+                <span>Humidity: <strong id="humidity"></strong></span>
+            </div>
+            <div class="detail-item">
+                <i class="fa-solid fa-wind"></i>
+                <span>Wind: <strong id="wind-speed"></strong></span>
+            </div>
+            <div class="detail-item">
+                <i class="fa-solid fa-gauge-high"></i>
+                <span>Pressure: <strong id="pressure"></strong></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="forecast-container hidden" id="forecast-container" style="max-width: 100%; padding: 0;">
+        <!-- Forecast cards injected here -->
+    </div>
+
+    <div id="map" class="hidden" style="margin: 0; max-width: 100%; box-shadow: none;"></div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/geolocation.js', v=2) }}"></script>
+<script src="{{ url_for('static', filename='js/map.js', v=2) }}"></script>
+{% endblock %}

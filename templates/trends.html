@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Trends - ClimaSense{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Aurora Theme - 3D */
+    .layer-back {
+        background: #10002b;
+    }
+    
+    .layer-mid {
+        /* Aurora ribbons */
+        background: radial-gradient(circle at 30% 50%, rgba(157, 78, 221, 0.4), transparent 50%),
+                    radial-gradient(circle at 70% 30%, rgba(0, 255, 128, 0.2), transparent 50%);
+        transform-origin: center;
+        animation: auroraWave1 15s infinite alternate ease-in-out;
+        transform: translateZ(-300px) scale(1.5);
+    }
+    
+    .layer-front {
+        background: radial-gradient(ellipse at 60% 80%, rgba(157, 78, 221, 0.3), transparent 60%);
+        animation: auroraWave2 20s infinite alternate ease-in-out;
+        transform: translateZ(-150px) scale(1.2);
+    }
+    
+    @keyframes auroraWave1 {
+        0% { transform: translateZ(-300px) scale(1.5) rotateZ(0deg) rotateX(10deg); }
+        100% { transform: translateZ(-300px) scale(1.5) rotateZ(15deg) rotateX(-10deg); }
+    }
+    
+    @keyframes auroraWave2 {
+        0% { transform: translateZ(-150px) scale(1.2) rotateZ(-10deg) rotateY(10deg); }
+        100% { transform: translateZ(-150px) scale(1.2) rotateZ(5deg) rotateY(-5deg); }
+    }
+
+    .chart-container {
+        transform-style: preserve-3d;
+        background: rgba(0,0,0,0.3);
+        border-radius: var(--border-radius-md);
+        padding: 10px;
+        box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+        border: 1px solid rgba(157,78,221,0.2);
+        transition: transform 0.1s;
+    }
+    
+    .form-input {
+        background: rgba(0,0,0,0.4);
+        border: 1px solid rgba(157,78,221,0.4);
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block scene_orbs %}
+<!-- No orbs for trends page -->
+{% endblock %}
+
+{% block content %}
+<div style="max-width:1000px; margin: 0 auto; padding: 2rem;">
+    <div class="trends-header glass" style="padding: 2rem; margin-bottom: 2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+        <h2>Historical Trends</h2>
+        
+        <div style="display:flex; gap:1rem; align-items:center;">
+            <input type="text" id="trend-city" class="search-input" placeholder="Primary City (e.g. London)" value="London">
+            <span style="color: rgba(255,255,255,0.5);">vs</span>
+            <input type="text" id="compare-city" class="search-input" placeholder="Compare City (Optional)">
+            <select id="trend-range" class="search-input" style="width:auto;">
+                <option value="7d">Last 7 Days</option>
+                <option value="30d">Last 30 Days</option>
+            </select>
+            <button id="load-trend-btn" class="search-btn">Load</button>
+        </div>
+    </div>
+    
+    <div class="glass" style="padding: 2rem;">
+        <div class="chart-tabs" style="display:flex; gap:1rem; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:1rem; padding-bottom:0.5rem;">
+            <button class="theme-toggle-btn active" data-metric="temperature" style="border-bottom: 2px solid var(--accent);">Temperature</button>
+            <button class="theme-toggle-btn" data-metric="humidity">Humidity</button>
+            <button class="theme-toggle-btn" data-metric="wind_speed">Wind Speed</button>
+        </div>
+        
+        <div class="chart-container" style="position: relative; height:400px; width:100%">
+            <canvas id="trend-canvas"></canvas>
+            <div id="trend-empty-state" class="hidden" style="position: absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
+                <i class="fa-solid fa-chart-line fa-3x" style="color:var(--text-secondary); margin-bottom:1rem;"></i>
+                <h3 style="color:var(--text-secondary);">Not enough data. We are tracking this city now!</h3>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endblock %}

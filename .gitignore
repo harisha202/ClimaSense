@@ -1,0 +1,19 @@
+# Environments
+.env
+api.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+
+# IDEs
+.vscode/
+.idea/
+
+# DB
+*.sqlite3
+*.db
