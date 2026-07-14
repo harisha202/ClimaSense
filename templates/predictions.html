@@ -90,6 +90,12 @@
             </div>
         </div>
 
+        <div class="hidden" id="prediction-empty-state" style="transform: translateZ(15px); text-align: center; padding: 2rem;">
+            <i class="fa-solid fa-chart-line fa-3x" style="color: rgba(0,0,0,0.3); margin-bottom: 1rem;"></i>
+            <h3 style="color: #555;">Not Enough Data Yet</h3>
+            <p id="pred-empty-message" style="color: #777;">We need a bit more historical weather data for this city to generate accurate AI predictions. Check back later!</p>
+        </div>
+
     </div>
 </div>
 {% endblock %}
@@ -132,16 +138,22 @@ async function fetchPrediction() {
         
         if(data.success) {
             document.getElementById('prediction-results').classList.remove('hidden');
+            document.getElementById('prediction-empty-state').classList.add('hidden');
             document.getElementById('pred-title').textContent = `48-Hour Forecast for ${data.city}`;
             document.getElementById('ai-insight-banner').innerHTML = `<i class="fa-solid fa-robot" style="margin-right: 10px;"></i> <strong>AI Insight:</strong> ${data.prediction.ai_insight}`;
             
             renderPredictionChart(data.prediction);
         } else {
-            alert(data.message || 'Error fetching prediction');
+            document.getElementById('prediction-empty-state').classList.remove('hidden');
+            if (data.message) {
+                document.getElementById('pred-empty-message').textContent = data.message;
+            }
         }
     } catch(e) {
         console.error(e);
         document.getElementById('pred-loading').classList.add('hidden');
+        document.getElementById('prediction-empty-state').classList.remove('hidden');
+        document.getElementById('pred-empty-message').textContent = 'An error occurred while fetching predictions.';
     }
 }
 

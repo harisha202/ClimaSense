@@ -22,13 +22,21 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fetch Primary City
             const res1 = await fetch(`/api/trends/${encodeURIComponent(primaryCityName)}?range=${range}`);
             const data1 = await res1.json();
-            if(data1.success) currentDataPrimary = data1.data;
+            if(data1.success) {
+                currentDataPrimary = data1.data;
+            } else {
+                currentDataPrimary = [];
+            }
             
             // Fetch Secondary City if provided
             if (secondaryCityName) {
                 const res2 = await fetch(`/api/trends/${encodeURIComponent(secondaryCityName)}?range=${range}`);
                 const data2 = await res2.json();
-                if(data2.success) currentDataSecondary = data2.data;
+                if(data2.success) {
+                    currentDataSecondary = data2.data;
+                } else {
+                    currentDataSecondary = [];
+                }
             } else {
                 currentDataSecondary = [];
             }
@@ -36,6 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
             renderChart();
         } catch(e) {
             console.error('Error loading trends', e);
+            currentDataPrimary = [];
+            currentDataSecondary = [];
+            renderChart();
         }
     });
 

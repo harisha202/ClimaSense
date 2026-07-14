@@ -74,3 +74,25 @@ def save_city():
     db.session.add(new_city)
     db.session.commit()
     return jsonify({'success': True, 'message': 'City saved successfully'})
+
+@weather_bp.route('/api/cities/saved', methods=['GET'])
+@login_required
+def get_saved_cities():
+    cities = SavedCity.query.filter_by(user_id=current_user.id).order_by(SavedCity.created_at.desc()).all()
+    return jsonify({'success': True, 'cities': [c.to_dict() for c in cities]})
+
+@weather_bp.route('/api/cities/unsave', methods=['POST'])
+@login_required
+def unsave_city():
+    data = request.json
+    city_name = data.get('city')
+    if not city_name:
+        return jsonify({'success': False, 'message': 'City name required'}), 400
+        
+    existing = SavedCity.query.filter_by(user_id=current_user.id, city=city_name).first()
+    if not existing:
+        return jsonify({'success': False, 'message': 'City not found in saved list'}), 404
+        
+    db.session.delete(existing)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'City removed successfully'})

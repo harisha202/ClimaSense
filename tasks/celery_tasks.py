@@ -66,8 +66,8 @@ celery.conf.beat_schedule = {
         'task': 'tasks.celery_tasks.warm_cache',
         'schedule': crontab(minute=0, hour='*/6'),
     },
-    'check-alerts-every-minute': {
+    'check-alerts-every-15-minutes': {
         'task': 'tasks.celery_tasks.check_live_alerts',
-        'schedule': crontab(minute='*'),
+        'schedule': crontab(minute='*/15'),
     },
 }

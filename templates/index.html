@@ -29,6 +29,14 @@
 
 {% block content %}
 <div id="alert-banner" class="alert-banner hidden"></div>
+
+<div id="saved-cities-container" class="hidden" style="max-width: 900px; margin: 0 auto 1rem;">
+    <h3 style="color: #f8f9fa; margin-bottom: 0.5rem; padding-left: 1rem; font-size: 1.1rem;"><i class="fa-solid fa-star" style="color: var(--accent);"></i> My Saved Cities</h3>
+    <div id="saved-cities-shelf" class="saved-cities-shelf" style="display: flex; gap: 1rem; overflow-x: auto; padding: 0.5rem 1rem;">
+        <!-- Saved cities injected here -->
+    </div>
+</div>
+
 <div class="search-container">
     <input type="text" id="city-input" class="search-input" placeholder="Enter city name..." autocomplete="off">
     <button id="search-btn" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>

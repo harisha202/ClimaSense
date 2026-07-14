@@ -82,21 +82,33 @@ def get_aqi(lat, lon):
     return None
 
 def get_alerts(lat, lon):
-    """Severe weather alerts using One Call API"""
+    """Severe weather alerts using fallback logic (since OneCall is paid)"""
     cache_key = f"alerts_{lat}_{lon}"
     cached = cache_get(cache_key)
     if cached:
         return cached
 
-    api_key = current_app.config['OPENWEATHER_API_KEY']
-    # Free tier note: One Call API 3.0 requires separate subscription, using generic alerts logic or mock if needed
-    url = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&exclude=current,minutely,hourly,daily&appid={api_key}"
-    try:
-        resp = requests.get(url, timeout=10)
-        if resp.status_code == 200:
-            data = resp.json()
-            cache_set(cache_key, data)
-            return data
-    except Exception as e:
-        current_app.logger.error(f"Error fetching alerts for {lat}, {lon}: {e}")
+    # Instead of hitting the paid onecall API, we check current weather for severe conditions
+    weather = get_weather_by_coords(lat, lon)
+    if weather and 'weather' in weather and len(weather['weather']) > 0:
+        desc = weather['weather'][0]['description'].lower()
+        temp = weather['main']['temp']
+        wind = weather['wind']['speed']
+        
+        alerts = []
+        if 'storm' in desc or 'thunder' in desc:
+            alerts.append({'event': 'Severe Thunderstorm', 'description': 'Thunderstorms detected in the area. Take caution.'})
+        elif 'hurricane' in desc or 'tornado' in desc:
+            alerts.append({'event': 'Extreme Weather Warning', 'description': 'Extreme weather conditions detected. Seek shelter immediately.'})
+        elif 'heavy rain' in desc or 'extreme rain' in desc:
+            alerts.append({'event': 'Heavy Rainfall', 'description': 'Heavy rain detected. Risk of localized flooding.'})
+        elif temp > 40:
+            alerts.append({'event': 'Extreme Heat Advisory', 'description': 'Temperatures exceed 40°C. Stay hydrated and avoid outdoor activities.'})
+        elif wind > 20: # m/s (approx 72 km/h)
+            alerts.append({'event': 'High Wind Warning', 'description': 'Dangerous high winds detected. Secure loose objects.'})
+            
+        data = {'alerts': alerts}
+        cache_set(cache_key, data)
+        return data
+        
     return None

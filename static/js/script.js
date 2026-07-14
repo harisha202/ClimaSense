@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Service Worker registration failed', err));
     }
 
+    // Load saved cities
+    window.fetchSavedCities();
+
     const searchBtn = document.getElementById('search-btn');
     const cityInput = document.getElementById('city-input');
     
@@ -146,8 +149,10 @@ window.renderWeather = (data) => {
                 const result = await res.json();
                 if (result.success) {
                     saveBtn.innerHTML = '<i class="fa-solid fa-star" style="color: var(--accent);"></i>';
+                    window.showToast(`${data.name} saved!`);
+                    window.fetchSavedCities();
                 } else {
-                    alert(result.message);
+                    window.showToast(result.message);
                 }
             } catch(e) { console.error(e); }
         };
@@ -268,3 +273,69 @@ function renderSuggestions(data) {
     pill.textContent = tip;
     row.appendChild(pill);
 }
+
+// Toast Notifications
+window.showToast = (message) => {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `<i class="fa-solid fa-circle-info" style="color: var(--accent); margin-right: 8px;"></i> ${message}`;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+};
+
+// Saved Cities Shelf
+window.fetchSavedCities = async () => {
+    const shelf = document.getElementById('saved-cities-shelf');
+    const container = document.getElementById('saved-cities-container');
+    if (!shelf) return;
+    
+    try {
+        const res = await fetch('/api/cities/saved');
+        const data = await res.json();
+        if (data.success && data.cities.length > 0) {
+            container.classList.remove('hidden');
+            shelf.innerHTML = '';
+            data.cities.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'saved-city-card';
+                card.innerHTML = `
+                    <button class="remove-btn" title="Remove city" onclick="window.unsaveCity(event, '${c.city}')"><i class="fa-solid fa-xmark"></i></button>
+                    <strong>${c.city}</strong>
+                `;
+                card.onclick = () => {
+                    document.getElementById('city-input').value = c.city;
+                    fetchWeather(c.city);
+                };
+                shelf.appendChild(card);
+            });
+        } else {
+            container.classList.add('hidden');
+        }
+    } catch(e) { console.error(e); }
+};
+
+window.unsaveCity = async (e, city) => {
+    e.stopPropagation();
+    try {
+        const res = await fetch('/api/cities/unsave', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({city: city})
+        });
+        const result = await res.json();
+        if(result.success) {
+            window.showToast(`${city} removed from saved cities.`);
+            window.fetchSavedCities();
+        }
+    } catch(err) { console.error(err); }
+};
