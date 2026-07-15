@@ -32,8 +32,8 @@ body.light-theme {
 
 body.dark-theme {
     --bg-primary: #121212;
-    --bg-card: rgba(30, 30, 30, 0.85);
-    --bg-navbar: rgba(20, 20, 20, 0.95);
+    --bg-card: rgba(30, 30, 30, 0.4);
+    --bg-navbar: rgba(20, 20, 20, 0.8);
     --text-primary: #f8f9fa;
     --text-secondary: #adb5bd;
     --accent: #ffb703;
