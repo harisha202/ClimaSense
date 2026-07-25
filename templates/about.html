@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}ClimaSense - About{% endblock %}
+
+{% block extra_css %}
+<style>
+    .about-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.1);
+        backdrop-filter: blur(10px);
+        color: #f8f9fa;
+    }
+    
+    .about-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .about-header i {
+        font-size: 4rem;
+        color: var(--accent);
+        margin-bottom: 1rem;
+    }
+    
+    .about-section {
+        margin-bottom: 2rem;
+    }
+    
+    .about-section h3 {
+        color: var(--accent);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 1rem;
+    }
+    
+    .info-label {
+        font-weight: bold;
+        color: #ccc;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="about-container">
+    <div class="about-header">
+        <i class="fa-solid fa-cloud-sun"></i>
+        <h2>About ClimaSense</h2>
+        <p>AI-Powered Weather Dashboard</p>
+    </div>
+    
+    <div class="about-section">
+        <h3>Project Information</h3>
+        <div class="info-grid">
+            <div class="info-label">Version</div>
+            <div>2.0.0 (Comprehensive Upgrade)</div>
+            
+            <div class="info-label">Developer</div>
+            <div>ClimaSense Team</div>
+            
+            <div class="info-label">License</div>
+            <div>MIT License</div>
+            
+            <div class="info-label">Source Code</div>
+            <div><a href="#" style="color: var(--accent); text-decoration: none;"><i class="fa-brands fa-github"></i> GitHub Repository</a></div>
+        </div>
+    </div>
+    
+    <div class="about-section">
+        <h3>Technology Stack</h3>
+        <ul style="list-style-type: none; padding-left: 0;">
+            <li style="margin-bottom: 0.5rem;"><i class="fa-brands fa-python" style="color: var(--accent); width: 20px;"></i> <strong>Backend:</strong> Python, Flask, SQLAlchemy</li>
+            <li style="margin-bottom: 0.5rem;"><i class="fa-brands fa-html5" style="color: var(--accent); width: 20px;"></i> <strong>Frontend:</strong> HTML5, Vanilla CSS (Glassmorphism), Vanilla JS</li>
+            <li style="margin-bottom: 0.5rem;"><i class="fa-solid fa-database" style="color: var(--accent); width: 20px;"></i> <strong>Data & Queue:</strong> SQLite, Redis, Celery</li>
+            <li style="margin-bottom: 0.5rem;"><i class="fa-solid fa-network-wired" style="color: var(--accent); width: 20px;"></i> <strong>Real-time:</strong> Flask-SocketIO</li>
+        </ul>
+    </div>
+    
+    <div class="about-section">
+        <h3>Data Providers</h3>
+        <div class="info-grid">
+            <div class="info-label">Weather & Forecasts</div>
+            <div><a href="https://openweathermap.org/" target="_blank" style="color: #fff;">OpenWeatherMap API</a></div>
+            
+            <div class="info-label">Dynamic Backgrounds</div>
+            <div><a href="https://unsplash.com/" target="_blank" style="color: #fff;">Unsplash API</a></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

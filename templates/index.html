@@ -4,99 +4,185 @@
 
 {% block extra_css %}
 <style>
-    #dashboard-wrapper {
-        transform-style: preserve-3d;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: 0 15px 35px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.1);
-        backdrop-filter: blur(4px);
-        max-width: 900px;
-        margin: 0 auto 2rem;
-        padding: 2rem;
-        border-radius: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-        transition: transform 0.1s;
-        color: #f8f9fa !important;
-    }
-    
-    #dashboard-wrapper * {
-        color: #f8f9fa;
-    }
+    /* Inline styles for dashboard specific structure if needed, but mostly in style.css */
 </style>
 {% endblock %}
 
 {% block content %}
 <div id="alert-banner" class="alert-banner hidden"></div>
 
-<div id="saved-cities-container" class="hidden" style="max-width: 900px; margin: 0 auto 1rem;">
-    <h3 style="color: #f8f9fa; margin-bottom: 0.5rem; padding-left: 1rem; font-size: 1.1rem;"><i class="fa-solid fa-star" style="color: var(--accent);"></i> My Saved Cities</h3>
-    <div id="saved-cities-shelf" class="saved-cities-shelf" style="display: flex; gap: 1rem; overflow-x: auto; padding: 0.5rem 1rem;">
-        <!-- Saved cities injected here -->
+<div class="dashboard-controls">
+    <div class="search-container">
+        <input type="text" id="city-input" class="search-input" placeholder="Enter city name..." autocomplete="off">
+        <button id="search-btn" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <button id="geo-btn" class="geo-btn" title="Current Location"><i class="fa-solid fa-map-location-dot"></i></button>
+        <button id="settings-btn" class="settings-btn" title="Settings"><i class="fa-solid fa-gear"></i></button>
     </div>
-</div>
-
-<div class="search-container">
-    <input type="text" id="city-input" class="search-input" placeholder="Enter city name..." autocomplete="off">
-    <button id="search-btn" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
-    <button id="geo-btn" class="geo-btn"><i class="fa-solid fa-map-location-dot"></i></button>
-</div>
-
-<div class="suggestions-row hidden" id="suggestions-row" style="display:flex; justify-content:center; gap:10px; margin-bottom: 20px;">
-    <!-- Suggestion pills injected here by JS -->
+    
+    <div class="suggestions-row hidden" id="suggestions-row"></div>
 </div>
 
 <div id="loading-spinner" class="hidden" style="text-align:center; padding: 2rem;">
     <i class="fa-solid fa-spinner fa-spin fa-3x" style="color:var(--accent);"></i>
 </div>
 
-<div id="dashboard-wrapper" class="hidden">
-    <div class="weather-card hidden" id="weather-card" style="margin: 0 auto; padding: 0; position: relative;">
-        <button id="save-city-btn" class="theme-toggle-btn" style="position: absolute; top: 10px; right: 10px;" title="Save City">
-            <i class="fa-regular fa-star"></i>
-        </button>
-        <div style="display:flex; justify-content:center; align-items:flex-start; flex-direction: column;">
-            <h2 id="city-name" style="font-size: 2.5rem; margin-bottom: 0.25rem;"></h2>
-            <div id="city-local-time" style="font-size: 1.1rem; color: #555; margin-bottom: 1rem; font-weight: bold;"></div>
-        </div>
-        <div style="display:flex; justify-content:center; gap: 10px; margin-bottom: 1rem;">
-            <div class="aqi-badge hidden" id="aqi-badge"></div>
-            <div class="aqi-badge hidden" id="comfort-badge"></div>
-        </div>
-        
-        <div>
-            <img id="weather-icon" class="weather-icon" src="" alt="Weather Icon">
-        </div>
-        
-        <div id="temperature" class="temperature"></div>
-        <div id="weather-desc" class="weather-desc"></div>
-        
-        <div class="weather-details-grid">
-            <div class="detail-item">
-                <i class="fa-solid fa-temperature-half"></i>
-                <span>Feels like: <strong id="feels-like"></strong></span>
-            </div>
-            <div class="detail-item">
-                <i class="fa-solid fa-droplet"></i>
-                <span>Humidity: <strong id="humidity"></strong></span>
-            </div>
-            <div class="detail-item">
-                <i class="fa-solid fa-wind"></i>
-                <span>Wind: <strong id="wind-speed"></strong></span>
-            </div>
-            <div class="detail-item">
-                <i class="fa-solid fa-gauge-high"></i>
-                <span>Pressure: <strong id="pressure"></strong></span>
-            </div>
-        </div>
+<div id="dashboard-wrapper" class="dashboard-wrapper hidden">
+    <!-- Top Action Bar -->
+    <div class="dashboard-actions">
+        <button id="save-city-btn" class="btn-icon" title="Save City"><i class="fa-regular fa-star"></i></button>
+        <button id="export-csv-btn" class="btn-icon" title="Export CSV"><i class="fa-solid fa-file-csv"></i></button>
     </div>
 
-    <div class="forecast-container hidden" id="forecast-container" style="max-width: 100%; padding: 0;">
-        <!-- Forecast cards injected here -->
+    <!-- Main Grid -->
+    <div class="dashboard-grid-modern">
+        
+        <!-- Left Column: Main Weather & AI Summary -->
+        <div class="glass card-main-weather">
+            <h2 id="city-name" class="city-title"></h2>
+            <div id="city-local-time" class="city-time"></div>
+            
+            <div class="weather-primary">
+                <img id="weather-icon" class="weather-icon-large" src="" alt="Weather Icon">
+                <div class="temp-display">
+                    <span id="temperature" class="temp-large"></span>
+                    <div id="weather-desc" class="weather-desc-text"></div>
+                </div>
+            </div>
+            
+            <div class="ai-summary-box">
+                <i class="fa-solid fa-robot"></i> <span id="ai-summary-text"></span>
+            </div>
+        </div>
+
+        <!-- Right Column Top: KPI Grid -->
+        <div class="glass card-kpi">
+            <h3><i class="fa-solid fa-gauge"></i> Current Conditions</h3>
+            <div class="kpi-grid-inner">
+                <div class="kpi-item">
+                    <i class="fa-solid fa-temperature-half"></i>
+                    <div class="kpi-val"><strong id="feels-like">--</strong></div>
+                    <div class="kpi-label">Feels Like</div>
+                </div>
+                <div class="kpi-item">
+                    <i class="fa-solid fa-droplet"></i>
+                    <div class="kpi-val"><strong id="humidity">--</strong></div>
+                    <div class="kpi-label">Humidity</div>
+                </div>
+                <div class="kpi-item">
+                    <i class="fa-solid fa-wind"></i>
+                    <div class="kpi-val"><strong id="wind-speed">--</strong></div>
+                    <div class="kpi-label">Wind</div>
+                </div>
+                <div class="kpi-item">
+                    <i class="fa-regular fa-eye"></i>
+                    <div class="kpi-val"><strong id="visibility">--</strong></div>
+                    <div class="kpi-label">Visibility</div>
+                </div>
+                <div class="kpi-item">
+                    <i class="fa-solid fa-cloud-rain"></i>
+                    <div class="kpi-val"><strong id="rain">0 mm</strong></div>
+                    <div class="kpi-label">Rain (1h)</div>
+                </div>
+                <div class="kpi-item">
+                    <i class="fa-solid fa-gauge-high"></i>
+                    <div class="kpi-val"><strong id="pressure">--</strong></div>
+                    <div class="kpi-label">Pressure</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full Width: Hourly Timeline -->
+        <div class="glass card-timeline">
+            <h3><i class="fa-regular fa-clock"></i> 24-Hour Forecast</h3>
+            <div id="timeline-container" class="timeline-container">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Details Row -->
+        <div class="glass card-aqi">
+            <h3><i class="fa-solid fa-leaf"></i> Air Quality</h3>
+            <div class="aqi-display">
+                <div id="aqi-value" class="aqi-val-large">--</div>
+                <div id="aqi-label" class="aqi-badge">--</div>
+            </div>
+        </div>
+
+        <div class="glass card-sun">
+            <h3><i class="fa-solid fa-sun"></i> Sun & Moon</h3>
+            <div class="sun-grid">
+                <div class="sun-item">
+                    <i class="fa-solid fa-sunrise"></i>
+                    <div>Sunrise</div>
+                    <strong id="sunrise-time">--</strong>
+                </div>
+                <div class="sun-item">
+                    <i class="fa-solid fa-sunset"></i>
+                    <div>Sunset</div>
+                    <strong id="sunset-time">--</strong>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass card-info">
+            <h3><i class="fa-solid fa-circle-info"></i> City Info</h3>
+            <ul class="city-info-list">
+                <li><span>Country:</span> <strong id="info-country">--</strong></li>
+                <li><span>Timezone:</span> <strong id="info-tz">--</strong></li>
+                <li><span>Coordinates:</span> <strong id="info-coords">--</strong></li>
+            </ul>
+        </div>
+
+        <!-- Full Width: 5-Day Forecast & Map -->
+        <div class="glass card-forecast">
+            <h3><i class="fa-regular fa-calendar-days"></i> 5-Day Forecast</h3>
+            <div class="forecast-container-vertical" id="forecast-container">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <div class="glass card-map">
+            <h3><i class="fa-solid fa-map"></i> Weather Map</h3>
+            <div id="map" class="map-container"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Saved & Recent Cities Shelf -->
+<div class="dashboard-shelves">
+    <div id="saved-cities-container" class="glass hidden shelf-container">
+        <h3><i class="fa-solid fa-star" style="color: var(--accent);"></i> Favorite Cities</h3>
+        <div id="saved-cities-shelf" class="shelf-scroll"></div>
     </div>
 
-    <div id="map" class="hidden" style="margin: 0; max-width: 100%; box-shadow: none;"></div>
+    <div id="recent-cities-container" class="glass hidden shelf-container">
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Searches</h3>
+        <div id="recent-cities-shelf" class="shelf-scroll"></div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="modal hidden">
+    <div class="modal-content glass">
+        <span class="close-btn">&times;</span>
+        <h2>Settings</h2>
+        <div class="settings-group">
+            <label>Temperature Unit</label>
+            <select id="setting-temp-unit">
+                <option value="C">Celsius (°C)</option>
+                <option value="F">Fahrenheit (°F)</option>
+            </select>
+        </div>
+        <div class="settings-group">
+            <label>Wind Speed Unit</label>
+            <select id="setting-wind-unit">
+                <option value="ms">m/s</option>
+                <option value="kmh">km/h</option>
+                <option value="mph">mph</option>
+            </select>
+        </div>
+        <button id="save-settings-btn" class="auth-btn mt-4">Save Settings</button>
+    </div>
 </div>
 
 {% endblock %}
