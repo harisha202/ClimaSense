@@ -39,9 +39,10 @@
         <!-- Left Column: Main Weather & AI Summary -->
         <div class="glass card-main-weather">
             <h2 id="city-name" class="city-title"></h2>
+            <div id="city-subtitle" style="font-size: 1.5rem; font-weight: 500; margin-bottom: 5px;"></div>
             <div id="city-local-time" class="city-time"></div>
             
-            <div class="weather-primary">
+            <div class="weather-primary" style="display: none;">
                 <img id="weather-icon" class="weather-icon-large" src="" alt="Weather Icon">
                 <div class="temp-display">
                     <span id="temperature" class="temp-large"></span>
@@ -60,8 +61,8 @@
             <div class="kpi-grid-inner">
                 <div class="kpi-item">
                     <i class="fa-solid fa-temperature-half"></i>
-                    <div class="kpi-val"><strong id="feels-like">--</strong></div>
-                    <div class="kpi-label">Feels Like</div>
+                    <div class="kpi-val"><strong id="kpi-temperature">--</strong></div>
+                    <div class="kpi-label" id="feels-like-label">Feels Like --</div>
                 </div>
                 <div class="kpi-item">
                     <i class="fa-solid fa-droplet"></i>

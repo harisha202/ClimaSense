@@ -168,12 +168,31 @@ window.getWindString = (speedMS) => {
     return Math.round(speedMS * 3.6) + ' km/h'; // default kmh
 };
 
+window.getWeatherEmoji = (desc) => {
+    if(desc.includes('thunderstorm') || desc.includes('storm')) return '⛈️';
+    if(desc.includes('snow')) return '❄️';
+    if(desc.includes('rain') || desc.includes('drizzle')) return '🌧️';
+    if(desc.includes('fog') || desc.includes('mist')) return '🌫️';
+    if(desc.includes('cloud')) return '☁️';
+    if(desc.includes('clear')) return '☀️';
+    return '☀️'; // default
+};
+
 window.renderWeather = (data) => {
     document.getElementById('loading-spinner').classList.add('hidden');
     const wrapper = document.getElementById('dashboard-wrapper');
     if (wrapper) wrapper.classList.remove('hidden');
     
-    document.getElementById('city-name').textContent = `${data.name}, ${data.sys.country}`;
+    document.getElementById('city-name').textContent = `📍 ${data.name}`;
+    
+    const descStr = data.weather[0].description;
+    const tempStr = window.getTempString(data.main.temp);
+    const emoji = window.getWeatherEmoji(descStr);
+    
+    // Capitalize description
+    const capDesc = descStr.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    
+    document.getElementById('city-subtitle').textContent = `${emoji} ${capDesc} • ${tempStr}`;
     
     // Calculate and display local time
     const utcTime = new Date().getTime() + (new Date().getTimezoneOffset() * 60000);
@@ -183,13 +202,14 @@ window.renderWeather = (data) => {
     
     document.getElementById('city-local-time').innerHTML = `<i class="fa-regular fa-clock"></i> ${localTimeStr} (Local)`;
     
-    // Main
-    document.getElementById('temperature').textContent = window.getTempString(data.main.temp);
-    document.getElementById('weather-desc').textContent = data.weather[0].description;
+    // Main (hidden but kept for any logic that might check it)
+    document.getElementById('temperature').textContent = tempStr;
+    document.getElementById('weather-desc').textContent = descStr;
     document.getElementById('weather-icon').src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@4x.png`;
     
     // KPIs
-    document.getElementById('feels-like').textContent = window.getTempString(data.main.feels_like);
+    document.getElementById('kpi-temperature').textContent = window.getTempString(data.main.temp);
+    document.getElementById('feels-like-label').textContent = 'Feels Like ' + window.getTempString(data.main.feels_like);
     document.getElementById('humidity').textContent = data.main.humidity + '%';
     document.getElementById('wind-speed').textContent = window.getWindString(data.wind.speed);
     document.getElementById('visibility').textContent = (data.visibility / 1000).toFixed(1) + ' km';
@@ -320,12 +340,17 @@ window.fetchBackground = async (city, desc) => {
 window.updateTheme = (desc) => {
     const body = document.body;
     body.className = body.className.replace(/\btheme-[a-z]+\b/g, ''); // remove old
-    if(desc.includes('rain') || desc.includes('drizzle')) body.classList.add('theme-rain');
+    if(desc.includes('thunderstorm') || desc.includes('storm')) body.classList.add('theme-thunderstorm');
+    else if(desc.includes('rain') || desc.includes('drizzle')) body.classList.add('theme-rain');
     else if(desc.includes('snow')) body.classList.add('theme-snow');
+    else if(desc.includes('fog') || desc.includes('mist')) body.classList.add('theme-fog');
+    else if(desc.includes('cloud')) body.classList.add('theme-cloudy');
     else if(desc.includes('clear')) {
         const h = new Date().getHours();
         if(h > 18 || h < 6) body.classList.add('theme-night');
-        else body.classList.add('theme-clear');
+        else body.classList.add('theme-sunny');
+    } else {
+        body.classList.add('theme-sunny');
     }
 };
 

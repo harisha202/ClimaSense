@@ -879,10 +879,30 @@ main {
 
 /* Background overlay update */
 .bg-overlay {
-    background: rgba(0, 0, 0, 0.5) !important; /* 50% dark overlay */
+    background: rgba(0, 0, 0, 0.5) !important; /* fallback dark overlay */
+    transition: background 0.4s ease;
+}
+.bg-image {
+    transition: background-image 0.4s ease-in-out;
 }
 
 /* Themes dynamically toggled on body */
+body.theme-sunny { --accent: #ffb703; }
+body.theme-sunny .bg-overlay { background: rgba(255, 170, 0, 0.15) !important; }
+
+body.theme-cloudy { --accent: #94a3b8; }
+body.theme-cloudy .bg-overlay { background: rgba(80, 90, 110, 0.45) !important; }
+
+body.theme-thunderstorm { --accent: #8b5cf6; }
+body.theme-thunderstorm .bg-overlay { background: rgba(15, 15, 40, 0.75) !important; }
+
+body.theme-fog { --accent: #94a3b8; }
+body.theme-fog .bg-overlay { background: rgba(180, 180, 180, 0.45) !important; }
+
+body.theme-rain { --accent: #60a5fa; }
 body.theme-rain .bg-overlay { background: rgba(20, 30, 50, 0.6) !important; }
+
+body.theme-snow { --accent: #dbeafe; }
 body.theme-snow .bg-overlay { background: rgba(200, 210, 220, 0.4) !important; }
+
 body.theme-night .bg-overlay { background: rgba(10, 10, 20, 0.7) !important; }
