@@ -68,6 +68,11 @@
                 <button class="unit-toggle-btn" id="unit-toggle">°C</button>
             </li>
             <li>
+                <button class="theme-toggle-btn" id="status-toggle" title="System Status">
+                    <i class="fa-solid fa-heart-pulse" style="color: #10b981;"></i>
+                </button>
+            </li>
+            <li>
                 <a href="{{ url_for('auth.logout') }}" class="logout-btn">Logout</a>
             </li>
         </ul>
@@ -78,6 +83,20 @@
         {% block content %}{% endblock %}
     </main>
     
+    <!-- System Status Modal (API Key Protected - Never Exposed) -->
+    <div id="status-modal" class="modal hidden">
+        <div class="modal-content glass" style="max-width: 650px;">
+            <span class="close-btn" id="close-status-modal">&times;</span>
+            <h2><i class="fa-solid fa-heart-pulse" style="color: #10b981;"></i> System Operational Status</h2>
+            <p style="font-size: 0.85rem; color: #adb5bd; margin-bottom: 1rem;">
+                <i class="fa-solid fa-shield-halved" style="color: #60a5fa;"></i> <strong>Security Policy Enabled:</strong> Sensitive API keys are protected server-side and should not be shown.
+            </p>
+            <div id="status-cards-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <!-- Populated via JS -->
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Container -->
     <div id="toast-container" class="toast-container"></div>
 

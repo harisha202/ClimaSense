@@ -6,11 +6,8 @@ from models.user import User
 @pytest.fixture
 def app():
     # Use testing config
-    app = create_app('development')
+    app = create_app('testing')
     app.config.update({
-        "TESTING": True,
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
-        "WTF_CSRF_ENABLED": False,
         "REDIS_URL": "redis://localhost:6379/1" # different db for testing, or we mock
     })
 

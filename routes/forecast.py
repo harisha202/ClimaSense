@@ -11,7 +11,6 @@ forecast_bp = Blueprint('forecast', __name__)
 def api_forecast(city):
     data = get_forecast(city)
     if data and 'list' in data:
-        # Simplify forecast logic: Group by day, take one reading per day (e.g. 12:00)
         daily = defaultdict(list)
         for item in data['list']:
             dt = datetime.fromtimestamp(item['dt'])
@@ -19,11 +18,15 @@ def api_forecast(city):
             
         simplified_daily = []
         for date, items in list(daily.items())[:5]: # next 5 days
-            # pick midday if possible, else first
             midday = next((i for i in items if '12:00:00' in i.get('dt_txt', '')), items[0])
+            temps = [i['main']['temp'] for i in items]
+            max_temp = max(temps)
+            min_temp = min(temps)
             simplified_daily.append({
                 'date': date.isoformat(),
                 'temp': midday['main']['temp'],
+                'max_temp': max_temp,
+                'min_temp': min_temp,
                 'icon': midday['weather'][0]['icon'],
                 'description': midday['weather'][0]['description']
             })
@@ -32,10 +35,12 @@ def api_forecast(city):
         hourly = []
         for item in data['list'][:8]:
             dt = datetime.fromtimestamp(item['dt'])
+            pop_pct = int(item.get('pop', 0.15) * 100)
             hourly.append({
                 'time': dt.strftime('%I %p'),  # e.g., '02 PM'
                 'temp': item['main']['temp'],
                 'icon': item['weather'][0]['icon'],
+                'pop': pop_pct
             })
             
         return jsonify({'success': True, 'forecast': simplified_daily, 'hourly': hourly})

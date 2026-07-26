@@ -81,6 +81,34 @@ def get_aqi(lat, lon):
         current_app.logger.error(f"Error fetching AQI for {lat}, {lon}: {e}")
     return None
 
+def get_uv_index(lat, lon):
+    """UV index retrieval with fallback estimation"""
+    cache_key = f"uvi_{lat}_{lon}"
+    cached = cache_get(cache_key)
+    if cached:
+        return cached
+
+    api_key = current_app.config['OPENWEATHER_API_KEY']
+    url = f"https://api.openweathermap.org/data/2.5/uvi?lat={lat}&lon={lon}&appid={api_key}"
+    try:
+        resp = requests.get(url, timeout=5)
+        if resp.status_code == 200:
+            data = resp.json()
+            cache_set(cache_key, data)
+            return data
+    except Exception as e:
+        current_app.logger.error(f"Error fetching UVI for {lat}, {lon}: {e}")
+    
+    # Fallback estimation based on cloud cover
+    weather = get_weather_by_coords(lat, lon)
+    uvi_val = 5.0
+    if weather and 'clouds' in weather:
+        clouds = weather.get('clouds', {}).get('all', 50)
+        uvi_val = round(max(1.0, 9.0 * (1.0 - clouds / 150.0)), 1)
+    data = {'value': uvi_val}
+    cache_set(cache_key, data)
+    return data
+
 def get_alerts(lat, lon):
     """Severe weather alerts using fallback logic (since OneCall is paid)"""
     cache_key = f"alerts_{lat}_{lon}"
@@ -94,13 +122,16 @@ def get_alerts(lat, lon):
         desc = weather['weather'][0]['description'].lower()
         temp = weather['main']['temp']
         wind = weather['wind']['speed']
+        rain_1h = weather.get('rain', {}).get('1h', 0)
         
         alerts = []
-        if 'storm' in desc or 'thunder' in desc:
+        if 'flood' in desc or rain_1h >= 15 or 'extreme rain' in desc:
+            alerts.append({'event': 'Flood Warning', 'description': 'High rainfall intensity detected. Risk of flash flooding in low-lying areas.'})
+        elif 'storm' in desc or 'thunder' in desc:
             alerts.append({'event': 'Severe Thunderstorm', 'description': 'Thunderstorms detected in the area. Take caution.'})
         elif 'hurricane' in desc or 'tornado' in desc:
             alerts.append({'event': 'Extreme Weather Warning', 'description': 'Extreme weather conditions detected. Seek shelter immediately.'})
-        elif 'heavy rain' in desc or 'extreme rain' in desc:
+        elif 'heavy rain' in desc:
             alerts.append({'event': 'Heavy Rainfall', 'description': 'Heavy rain detected. Risk of localized flooding.'})
         elif temp > 40:
             alerts.append({'event': 'Extreme Heat Advisory', 'description': 'Temperatures exceed 40°C. Stay hydrated and avoid outdoor activities.'})

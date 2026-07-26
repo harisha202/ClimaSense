@@ -149,7 +149,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 },
                 plugins: {
-                    legend: { labels: { color: '#f8f9fa' } }
+                    legend: { labels: { color: '#f8f9fa' } },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) label += ': ';
+                                if (context.parsed.y !== null) {
+                                    let unit = '°C';
+                                    if(currentMetric === 'humidity') unit = '%';
+                                    else if(currentMetric === 'wind_speed') unit = ' m/s';
+                                    else if(currentMetric === 'pressure') unit = ' hPa';
+                                    label += context.parsed.y.toFixed(1) + unit;
+                                }
+                                return label;
+                            }
+                        }
+                    }
                 }
             }
         });

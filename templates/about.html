@@ -87,6 +87,20 @@
     </div>
     
     <div class="about-section">
+        <h3>Architecture</h3>
+        <p style="color: #ddd; line-height: 1.6; margin-bottom: 1rem;">
+            ClimaSense is architected using enterprise-grade design patterns for high availability, security, and responsive UX:
+        </p>
+        <ul style="list-style-type: none; padding-left: 0; line-height: 1.8;">
+            <li><i class="fa-solid fa-server" style="color: var(--accent); width: 20px;"></i> <strong>Modular Flask Blueprints:</strong> Clean separation of concerns across authentication, weather retrieval, alerts, and historical logging.</li>
+            <li><i class="fa-solid fa-bolt" style="color: var(--accent); width: 20px;"></i> <strong>Asynchronous Worker Queue:</strong> Celery and Redis handle background task processing, caching, and database writes without blocking UI rendering.</li>
+            <li><i class="fa-solid fa-satellite-dish" style="color: var(--accent); width: 20px;"></i> <strong>Real-Time WebSockets:</strong> Flask-SocketIO pushes instantaneous severe weather alerts to connected clients.</li>
+            <li><i class="fa-solid fa-shield-halved" style="color: #60a5fa; width: 20px;"></i> <strong>Zero-Leak API Proxying:</strong> Sensitive API keys (OpenWeatherMap, Unsplash) are securely stored on the backend and are never shown or exposed to client browsers.</li>
+            <li><i class="fa-solid fa-layer-group" style="color: var(--accent); width: 20px;"></i> <strong>Vanilla CSS Glassmorphism:</strong> High-performance hardware-accelerated 3D animations and responsive glass cards without heavy CSS frameworks.</li>
+        </ul>
+    </div>
+    
+    <div class="about-section">
         <h3>Data Providers</h3>
         <div class="info-grid">
             <div class="info-label">Weather & Forecasts</div>

@@ -10,6 +10,13 @@
 
 {% block content %}
 <div id="alert-banner" class="alert-banner hidden"></div>
+<div id="highlights-banner" class="highlights-banner glass hidden" style="margin-bottom: 1rem; padding: 0.8rem 1.5rem; display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div><i class="fa-solid fa-cloud-sun" style="color:var(--accent);"></i> <strong id="hb-weather">Pleasant Weather</strong></div>
+    <div style="opacity: 0.3;">•</div>
+    <div><i class="fa-solid fa-umbrella" style="color:#60a5fa;"></i> <strong id="hb-rain">Low Rain Probability</strong></div>
+    <div style="opacity: 0.3;">•</div>
+    <div><i class="fa-solid fa-leaf" style="color:#10b981;"></i> <strong id="hb-aqi">Good Air Quality</strong></div>
+</div>
 
 <div class="dashboard-controls">
     <div class="search-container">
@@ -22,8 +29,14 @@
     <div class="suggestions-row hidden" id="suggestions-row"></div>
 </div>
 
-<div id="loading-spinner" class="hidden" style="text-align:center; padding: 2rem;">
-    <i class="fa-solid fa-spinner fa-spin fa-3x" style="color:var(--accent);"></i>
+<div id="loading-spinner" class="skeleton-container hidden" style="padding: 2rem; max-width: 1200px; margin: 0 auto;">
+    <div class="skeleton-card glass skeleton-pulse" style="height: 180px; width: 100%; margin-bottom: 1rem; border-radius: 16px;"></div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+        <div class="skeleton-card glass skeleton-pulse" style="height: 120px; border-radius: 12px;"></div>
+        <div class="skeleton-card glass skeleton-pulse" style="height: 120px; border-radius: 12px;"></div>
+        <div class="skeleton-card glass skeleton-pulse" style="height: 120px; border-radius: 12px;"></div>
+        <div class="skeleton-card glass skeleton-pulse" style="height: 120px; border-radius: 12px;"></div>
+    </div>
 </div>
 
 <div id="dashboard-wrapper" class="dashboard-wrapper hidden">
@@ -31,6 +44,7 @@
     <div class="dashboard-actions">
         <button id="save-city-btn" class="btn-icon" title="Save City"><i class="fa-regular fa-star"></i></button>
         <button id="export-csv-btn" class="btn-icon" title="Export CSV"><i class="fa-solid fa-file-csv"></i></button>
+        <button id="export-pdf-btn" class="btn-icon" title="Export PDF Report"><i class="fa-solid fa-file-pdf"></i></button>
     </div>
 
     <!-- Main Grid -->
@@ -80,9 +94,14 @@
                     <div class="kpi-label">Visibility</div>
                 </div>
                 <div class="kpi-item">
-                    <i class="fa-solid fa-cloud-rain"></i>
-                    <div class="kpi-val"><strong id="rain">0 mm</strong></div>
-                    <div class="kpi-label">Rain (1h)</div>
+                    <i class="fa-solid fa-sun" style="color: #f59e0b;"></i>
+                    <div class="kpi-val"><strong id="uv-index">--</strong></div>
+                    <div class="kpi-label" id="uv-label">UV Index</div>
+                </div>
+                <div class="kpi-item">
+                    <i class="fa-solid fa-cloud-rain" style="color: #60a5fa;"></i>
+                    <div class="kpi-val"><strong id="rain-prob">0%</strong></div>
+                    <div class="kpi-label">Chance of Rain (<span id="rain">0 mm</span>)</div>
                 </div>
                 <div class="kpi-item">
                     <i class="fa-solid fa-gauge-high"></i>
@@ -107,6 +126,7 @@
                 <div id="aqi-value" class="aqi-val-large">--</div>
                 <div id="aqi-label" class="aqi-badge">--</div>
             </div>
+            <div id="aqi-main-pollutant" style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary); text-align: center;">Main Pollutant: --</div>
         </div>
 
         <div class="glass card-sun">
@@ -131,6 +151,14 @@
                 <li><span>Country:</span> <strong id="info-country">--</strong></li>
                 <li><span>Timezone:</span> <strong id="info-tz">--</strong></li>
                 <li><span>Coordinates:</span> <strong id="info-coords">--</strong></li>
+            </ul>
+        </div>
+
+        <!-- Weather Insights Panel -->
+        <div class="glass card-insights">
+            <h3><i class="fa-solid fa-lightbulb" style="color: var(--accent);"></i> Weather Insights</h3>
+            <ul id="weather-insights-list" style="list-style: none; padding-left: 0; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.8rem; flex: 1; justify-content: space-around;">
+                <!-- Injected via JS -->
             </ul>
         </div>
 

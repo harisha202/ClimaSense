@@ -82,6 +82,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    const exportPdfBtn = document.getElementById('export-pdf-btn');
+    if(exportPdfBtn) {
+        exportPdfBtn.addEventListener('click', () => {
+            if(window.currentWeatherData) {
+                window.open(`/api/weather/${encodeURIComponent(window.currentWeatherData.name)}/export/pdf`, '_blank');
+            } else {
+                window.showToast("Please search for a city first.");
+            }
+        });
+    }
+    const statusToggleBtn = document.getElementById('status-toggle');
+    const statusModal = document.getElementById('status-modal');
+    const closeStatusModal = document.getElementById('close-status-modal');
+    if(statusToggleBtn && statusModal) {
+        statusToggleBtn.addEventListener('click', () => {
+            statusModal.classList.remove('hidden');
+            window.fetchSystemStatus();
+        });
+    }
+    if(closeStatusModal && statusModal) {
+        closeStatusModal.addEventListener('click', () => statusModal.classList.add('hidden'));
+    }
     
     if(settingsBtn) {
         settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
@@ -115,6 +137,9 @@ async function fetchWeather(city) {
     if(wrapper) wrapper.classList.add('hidden');
     if(banner) banner.classList.add('hidden');
     
+    // Start fetching place background image immediately in parallel!
+    window.fetchBackground(city, '');
+    
     try {
         const res = await fetch(`/api/weather/${encodeURIComponent(city)}`);
         const data = await res.json();
@@ -127,6 +152,18 @@ async function fetchWeather(city) {
                 document.getElementById('ai-summary-text').textContent = data.ai_summary;
             }
             
+            window.currentRainProb = data.rain_probability || 10;
+            const rainProbEl = document.getElementById('rain-prob');
+            if(rainProbEl) rainProbEl.textContent = window.currentRainProb + '%';
+            
+            // Highlights Banner
+            const hbBanner = document.getElementById('highlights-banner');
+            const hbWeather = document.getElementById('hb-weather');
+            const hbRain = document.getElementById('hb-rain');
+            if(hbBanner) hbBanner.classList.remove('hidden');
+            if(hbWeather) hbWeather.textContent = `${data.data.weather[0].description.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} • ${window.getTempString(data.data.main.temp)}`;
+            if(hbRain) hbRain.textContent = `${window.currentRainProb}% Chance of Rain`;
+            
             // Trigger parallel fetches
             const lat = data.data.coord.lat;
             const lon = data.data.coord.lon;
@@ -134,10 +171,11 @@ async function fetchWeather(city) {
             
             window.fetchForecast(data.data.name);
             window.fetchAQI(lat, lon);
+            window.fetchUV(lat, lon);
             window.fetchAlerts(lat, lon);
-            window.fetchBackground(data.data.name, desc);
             window.updateTheme(desc);
             window.fetchRecentSearches(); // refresh recent
+            window.renderInsights(data.data, window.currentRainProb);
             
             if(window.joinCityRoom) {
                 window.joinCityRoom(data.data.name);
@@ -273,11 +311,15 @@ window.renderForecast = (forecast) => {
         const date = new Date(day.date).toLocaleDateString('en-GB', {weekday: 'short', day: 'numeric'});
         const row = document.createElement('div');
         row.className = 'forecast-row';
+        const highStr = window.getTempString(day.max_temp !== undefined ? day.max_temp : day.temp);
+        const lowStr = window.getTempString(day.min_temp !== undefined ? day.min_temp : day.temp);
         row.innerHTML = `
             <div class="forecast-row-day">${date}</div>
             <img src="https://openweathermap.org/img/wn/${day.icon}.png" alt="icon">
             <div class="forecast-row-desc">${day.description}</div>
-            <div style="font-weight: bold;">${window.getTempString(day.temp)}</div>
+            <div class="forecast-temp-range">
+                <span class="temp-high">${highStr}</span> / <span class="temp-low">${lowStr}</span>
+            </div>
         `;
         container.appendChild(row);
     });
@@ -310,6 +352,15 @@ window.fetchAQI = async (lat, lon) => {
             
             label.className = 'aqi-badge';
             label.classList.add('aqi-' + data.label.toLowerCase().replace(' ', '-'));
+            
+            const mainPollutantEl = document.getElementById('aqi-main-pollutant');
+            if(mainPollutantEl && data.main_pollutant) {
+                mainPollutantEl.textContent = `Main Pollutant: ${data.main_pollutant}`;
+            }
+            const hbAqi = document.getElementById('hb-aqi');
+            if(hbAqi) {
+                hbAqi.textContent = `AQI: ${data.label}`;
+            }
         }
     } catch(e) { console.error(e); }
 };
@@ -443,4 +494,92 @@ window.unsaveCity = async (e, city) => {
             window.fetchSavedCities();
         }
     } catch(err) { console.error(err); }
+};
+
+window.fetchUV = async (lat, lon) => {
+    try {
+        const res = await fetch(`/api/uv?lat=${lat}&lon=${lon}`);
+        const data = await res.json();
+        if(data.success) {
+            const uvEl = document.getElementById('uv-index');
+            const uvLbl = document.getElementById('uv-label');
+            if(uvEl) uvEl.textContent = data.uvi;
+            if(uvLbl) uvLbl.textContent = `UV Index (${data.category})`;
+        }
+    } catch(e) { console.error(e); }
+};
+
+window.renderInsights = (weather, rainProb) => {
+    const list = document.getElementById('weather-insights-list');
+    if(!list) return;
+    list.innerHTML = '';
+    
+    const temp = weather.main.temp;
+    const wind = weather.wind.speed;
+    const desc = weather.weather[0].description.toLowerCase();
+    
+    const items = [];
+    // Bullet 1: Activity
+    if(temp >= 18 && temp <= 28 && !desc.includes('rain') && !desc.includes('storm')) {
+        items.push('🏃 Pleasant temperature and clear skies make outdoor sports and exercise ideal today.');
+    } else if(temp > 32) {
+        items.push('🔥 Extreme heat detected. Keep strenuous outdoor activity to early morning or evening.');
+    } else if(temp < 10) {
+        items.push('🧥 Cold temperatures outside. Wear warm layered clothing if heading outdoors.');
+    } else {
+        items.push('🚶 Moderate outdoor conditions. Stay prepared for shifting weather.');
+    }
+    
+    // Bullet 2: Rain
+    if(rainProb >= 60 || desc.includes('rain') || desc.includes('storm')) {
+        items.push('☔ High chance of precipitation. Carry an umbrella and allow extra travel time.');
+    } else {
+        items.push('🌤️ Low chance of rain expected today. Favorable for commuting and travel.');
+    }
+    
+    // Bullet 3: Wind & Comfort
+    if(wind > 10) {
+        items.push('💨 Strong winds reported. Secure light patio items and be cautious on elevated roads.');
+    } else {
+        items.push('🍃 Light breezes contribute to comfortable ambient air circulation.');
+    }
+    
+    // Bullet 4: Air Quality & Health
+    items.push('🌿 Monitor local air quality levels if you have sensitive respiratory conditions.');
+
+    items.forEach(text => {
+        const li = document.createElement('li');
+        li.style.cssText = 'background: rgba(255,255,255,0.05); padding: 0.8rem 1rem; border-radius: 8px; border-left: 3px solid var(--accent); font-size: 0.9rem;';
+        li.textContent = text;
+        list.appendChild(li);
+    });
+};
+
+window.fetchSystemStatus = async () => {
+    const grid = document.getElementById('status-cards-grid');
+    if(!grid) return;
+    grid.innerHTML = '<div style="grid-column: span 2; text-align: center; padding: 2rem;">Loading System Diagnostics...</div>';
+    try {
+        const res = await fetch('/api/system-status');
+        const data = await res.json();
+        if(data.success && data.status) {
+            grid.innerHTML = '';
+            Object.values(data.status).forEach(srv => {
+                const card = document.createElement('div');
+                card.className = 'status-card';
+                card.innerHTML = `
+                    <div class="status-card-header">
+                        <span>${srv.name}</span>
+                        <span class="status-badge ${srv.status === 'Online' ? 'status-online' : 'status-degraded'}">${srv.status}</span>
+                    </div>
+                    <div style="font-size: 0.85rem; color: #adb5bd;">${srv.database || srv.ttl || 'Operational'}</div>
+                    ${srv.api_key_status ? `<div class="status-key-secure"><i class="fa-solid fa-lock"></i> API Key: ${srv.api_key_status}</div>` : ''}
+                `;
+                grid.appendChild(card);
+            });
+        }
+    } catch(e) {
+        console.error(e);
+        grid.innerHTML = '<div style="grid-column: span 2; color: #ef4444;">Failed to load system status.</div>';
+    }
 };

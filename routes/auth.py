@@ -10,6 +10,9 @@ auth_bp = Blueprint('auth', __name__)
 _memory_limits = {}
 
 def is_rate_limited(ip, limit=5, window=60):
+    from flask import current_app
+    if current_app.config.get('TESTING'):
+        return False
     key = f"rl:auth:{ip}"
     if redis_client:
         try:

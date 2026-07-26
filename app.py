@@ -6,7 +6,7 @@ from flask import Flask, redirect, url_for
 from config import config_dict
 from extensions import db, login_manager, mail, init_redis, socketio
 from routes import register_blueprints
-from models.user import User
+from models import User, SavedCity, SearchHistory, WeatherLog
 
 def create_app(config_name='default'):
     app = Flask(__name__)
