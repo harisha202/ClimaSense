@@ -1,21 +1,35 @@
-const socket = io();
-
+let socket = null;
 let currentRoom = null;
 let notifCount = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
-    socket.on('connect', () => {
-        console.log('Connected to real-time alerts server');
-    });
+    const isAuth = document.body && document.body.dataset && document.body.dataset.auth === 'true';
+    if (!isAuth) return; // Do not connect socket on login/signup or unauthenticated pages
 
-    socket.on('weather_alert', (data) => {
-        console.log('Received live alert:', data);
-        showToast(data.title, data.description, data.city);
-        addNotification(data.title, data.description, data.city);
-    });
+    try {
+        socket = io({
+            transports: ['websocket', 'polling'],
+            reconnectionAttempts: 5,
+            reconnectionDelay: 3000,
+            timeout: 5000
+        });
+
+        socket.on('connect', () => {
+            console.log('Connected to real-time alerts server');
+        });
+
+        socket.on('weather_alert', (data) => {
+            console.log('Received live alert:', data);
+            showToast(data.title, data.description, data.city);
+            addNotification(data.title, data.description, data.city);
+        });
+    } catch(err) {
+        console.warn('Socket connection skipped:', err);
+    }
 });
 
 window.joinCityRoom = (city) => {
+    if (!socket || !socket.connected) return;
     if (currentRoom) {
         socket.emit('leave_city', {city: currentRoom});
     }

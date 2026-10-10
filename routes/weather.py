@@ -80,7 +80,7 @@ def api_weather(city):
 @weather_bp.route('/api/weather/recent')
 @login_required
 def get_recent_searches():
-    histories = SearchHistory.query.filter_by(user_id=current_user.id).order_by(SearchHistory.timestamp.desc()).limit(10).all()
+    histories = SearchHistory.query.filter_by(user_id=current_user.id).order_by(SearchHistory.searched_at.desc()).limit(10).all()
     # Deduplicate while preserving order
     seen = set()
     unique_cities = []
@@ -127,9 +127,11 @@ def api_weather_geo():
         return jsonify({'success': True, 'data': data})
     return jsonify({'success': False, 'message': 'Location not found or API error'}), 404
 
+@weather_bp.route('/api/background/<city>', defaults={'description': ''})
+@weather_bp.route('/api/background/<city>/', defaults={'description': ''})
 @weather_bp.route('/api/background/<city>/<description>')
 @login_required
-def api_background(city, description):
+def api_background(city, description=''):
     img_url = get_background_image(city, description)
     return jsonify({'success': True, 'url': img_url})
 @weather_bp.route('/api/cities/save', methods=['POST'])
@@ -171,16 +173,28 @@ def unsave_city():
     db.session.commit()
     return jsonify({'success': True, 'message': 'City removed successfully'})
 
+_tile_cache = {}
+
 @weather_bp.route('/api/tiles/<layer>/<z>/<x>/<y>.png')
 @login_required
 def proxy_tiles(layer, z, x, y):
     from flask import current_app
     import requests
+    tile_key = f"{layer}_{z}_{x}_{y}"
+    if tile_key in _tile_cache:
+        resp_content = _tile_cache[tile_key]
+        return Response(resp_content, mimetype='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+        
     api_key = current_app.config.get('OPENWEATHER_API_KEY')
     url = f"https://tile.openweathermap.org/map/{layer}/{z}/{x}/{y}.png?appid={api_key}"
     try:
-        resp = requests.get(url, timeout=5)
-        return Response(resp.content, mimetype='image/png')
+        resp = requests.get(url, timeout=3)
+        if resp.status_code == 200:
+            if len(_tile_cache) > 200:
+                _tile_cache.clear()
+            _tile_cache[tile_key] = resp.content
+            return Response(resp.content, mimetype='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+        return Response(status=resp.status_code)
     except:
         return Response(status=404)
 

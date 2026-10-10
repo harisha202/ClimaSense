@@ -16,10 +16,10 @@ def get_background_image(city, weather_description):
         url = f"https://api.unsplash.com/search/photos?query={city}&orientation=landscape&order_by=relevant&per_page=1"
         headers = {"Authorization": f"Client-ID {api_key}"}
         try:
-            resp = requests.get(url, headers=headers, timeout=1.8)
+            resp = requests.get(url, headers=headers, timeout=4.0)
             if resp.status_code == 200:
                 data = resp.json()
-                if data.get('results'):
+                if data.get('results') and len(data['results']) > 0:
                     img_url = data['results'][0]['urls']['regular']
                     cache_set(cache_key, img_url, ttl=86400) # cache for 24 hours
                     return img_url

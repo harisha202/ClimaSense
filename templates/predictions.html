@@ -4,55 +4,18 @@
 
 {% block extra_css %}
 <style>
-    /* AI Neural Network Theme - 3D */
-    .layer-back {
-        background: radial-gradient(circle at center, #0a192f, #020c1b);
-    }
-    
-    .layer-mid {
-        background-image: radial-gradient(circle at 10% 20%, rgba(100,255,218,0.2) 2px, transparent 3px),
-                          radial-gradient(circle at 80% 30%, rgba(100,255,218,0.2) 2px, transparent 3px),
-                          radial-gradient(circle at 50% 80%, rgba(100,255,218,0.2) 2px, transparent 3px);
-        background-size: 100px 100px;
-        animation: aiDrift 15s infinite alternate ease-in-out;
-        transform: translateZ(-300px) scale(1.5);
-    }
-    
-    .layer-front {
-        background-image: linear-gradient(rgba(100,255,218,0.05) 1px, transparent 1px),
-                          linear-gradient(90deg, rgba(100,255,218,0.05) 1px, transparent 1px);
-        background-size: 50px 50px;
-        animation: gridPulse 4s infinite alternate ease-in-out;
-        transform: translateZ(-100px) scale(1.2) rotateX(20deg);
-        transform-origin: bottom center;
-    }
-    
-    .orb { display: none; }
-    
-    @keyframes aiDrift {
-        0% { transform: translateZ(-300px) scale(1.5) translateX(-2%); }
-        100% { transform: translateZ(-300px) scale(1.5) translateX(2%); }
-    }
-    
-    @keyframes gridPulse {
-        0% { opacity: 0.3; transform: translateZ(-100px) scale(1.2) rotateX(20deg) translateY(0); }
-        100% { opacity: 0.7; transform: translateZ(-100px) scale(1.2) rotateX(20deg) translateY(20px); }
-    }
-
     .prediction-panel {
-        transform-style: preserve-3d;
-        background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.7));
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2), inset 0 0 20px rgba(255,255,255,0.5);
-        border: 1px solid rgba(255,255,255,0.8);
+        background: rgba(30, 41, 59, 0.85);
+        border: 1px solid rgba(255,255,255,0.15);
         padding: 2rem;
         border-radius: var(--border-radius-lg);
-        backdrop-filter: blur(15px);
-        transition: transform 0.1s;
-        color: #121212;
+        backdrop-filter: blur(10px);
+        color: #f8fafc;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
     
     .prediction-panel * {
-        color: #121212 !important;
+        color: inherit;
     }
 </style>
 {% endblock %}
@@ -212,17 +175,21 @@ function renderPredictionChart(pred) {
     });
 }
 
-// Ensure cards on this page tilt
+// Smooth, throttled card tilt
+let tiltTicking = false;
 document.addEventListener('mousemove', (e) => {
-    const cards = document.querySelectorAll('.prediction-panel');
-    if (cards.length === 0) return;
-    
-    const x = (window.innerWidth / 2 - e.pageX) / 50;
-    const y = (window.innerHeight / 2 - e.pageY) / 50;
-    
-    cards.forEach(card => {
-        card.style.transform = `translateZ(20px) rotateY(${x}deg) rotateX(${y}deg)`;
-    });
+    if (!tiltTicking) {
+        tiltTicking = true;
+        requestAnimationFrame(() => {
+            const card = document.getElementById('main-prediction-panel');
+            if (card) {
+                const x = (window.innerWidth / 2 - e.pageX) / 80;
+                const y = (window.innerHeight / 2 - e.pageY) / 80;
+                card.style.transform = `rotateY(${x.toFixed(2)}deg) rotateX(${y.toFixed(2)}deg)`;
+            }
+            tiltTicking = false;
+        });
+    }
 });
 </script>
 {% endblock %}

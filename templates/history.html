@@ -2,58 +2,7 @@
 
 {% block title %}Search History - ClimaSense{% endblock %}
 
-{% block extra_css %}
-<style>
-    /* History / Time Warp Theme - 3D */
-    .layer-back {
-        background: radial-gradient(circle at center, #0a0a2a 0%, #000 100%);
-    }
-    
-    .layer-mid {
-        /* Starfield coming at you */
-        background-image: radial-gradient(2px 2px at 40px 60px, #fff, rgba(0,0,0,0)),
-                          radial-gradient(2px 2px at 20px 50px, rgba(255,255,255,0.8), rgba(0,0,0,0)),
-                          radial-gradient(2px 2px at 30px 100px, rgba(255,255,255,0.6), rgba(0,0,0,0));
-        background-repeat: repeat;
-        background-size: 200px 200px;
-        animation: timeWarp 4s linear infinite;
-        transform-origin: center;
-        opacity: 0.6;
-    }
-    
-    .layer-front {
-        /* Faster stars */
-        background-image: radial-gradient(3px 3px at 50px 160px, #fff, rgba(0,0,0,0)),
-                          radial-gradient(2px 2px at 90px 40px, rgba(255,255,255,0.9), rgba(0,0,0,0)),
-                          radial-gradient(2px 2px at 130px 80px, rgba(255,255,255,0.7), rgba(0,0,0,0));
-        background-repeat: repeat;
-        background-size: 300px 300px;
-        animation: timeWarp 2s linear infinite;
-        transform-origin: center;
-    }
-    
-    @keyframes timeWarp {
-        0% { transform: translateZ(-500px) scale(1); opacity: 0; }
-        50% { opacity: 1; }
-        100% { transform: translateZ(200px) scale(3); opacity: 0; }
-    }
-
-    .table tr {
-        transform-style: preserve-3d;
-        transition: transform 0.2s, background 0.2s;
-    }
-
-    .table tr:hover {
-        background: rgba(65, 90, 119, 0.2);
-        transform: translateZ(10px) rotateX(2deg);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
-</style>
-{% endblock %}
-
-{% block scene_orbs %}
-<!-- No orbs for history page -->
-{% endblock %}
+{% block extra_css %}{% endblock %}
 
 {% block content %}
 <div style="max-width:800px; margin: 0 auto; padding: 2rem;">

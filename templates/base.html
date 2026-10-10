@@ -20,20 +20,9 @@
     
     {% block extra_css %}{% endblock %}
 </head>
-<body class="dark-theme"> <!-- Default to dark, overridden by JS -->
+<body class="dark-theme" data-auth="{{ 'true' if current_user.is_authenticated else 'false' }}"> <!-- Default to dark, overridden by JS -->
 
     <div class="bg-image" id="bg-image"></div>
-    <div class="scene-3d" id="scene-3d">
-        <div class="layer layer-back" id="layer-back"></div>
-        <div class="layer layer-mid" id="layer-mid">
-            {% block scene_orbs %}
-            <div class="orb orb-cloud orb-1"></div>
-            <div class="orb orb-cloud orb-2"></div>
-            <div class="orb orb-cloud orb-3"></div>
-            {% endblock %}
-        </div>
-        <div class="layer layer-front" id="layer-front"></div>
-    </div>
     <div class="bg-overlay"></div>
 
     <nav class="navbar">

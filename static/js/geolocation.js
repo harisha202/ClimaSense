@@ -9,10 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Show loading state
-        document.getElementById('loading-spinner').classList.remove('hidden');
-        document.getElementById('weather-card').classList.add('hidden');
-        document.getElementById('forecast-container').classList.add('hidden');
-        document.getElementById('map').classList.add('hidden');
+        const spinner = document.getElementById('loading-spinner');
+        const wrapper = document.getElementById('dashboard-wrapper');
+        if (spinner) spinner.classList.remove('hidden');
+        if (wrapper) wrapper.classList.add('hidden');
         
         navigator.geolocation.getCurrentPosition(
             async (position) => {

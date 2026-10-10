@@ -4,56 +4,20 @@
 
 {% block extra_css %}
 <style>
-    /* Aurora Theme - 3D */
-    .layer-back {
-        background: #10002b;
-    }
-    
-    .layer-mid {
-        /* Aurora ribbons */
-        background: radial-gradient(circle at 30% 50%, rgba(157, 78, 221, 0.4), transparent 50%),
-                    radial-gradient(circle at 70% 30%, rgba(0, 255, 128, 0.2), transparent 50%);
-        transform-origin: center;
-        animation: auroraWave1 15s infinite alternate ease-in-out;
-        transform: translateZ(-300px) scale(1.5);
-    }
-    
-    .layer-front {
-        background: radial-gradient(ellipse at 60% 80%, rgba(157, 78, 221, 0.3), transparent 60%);
-        animation: auroraWave2 20s infinite alternate ease-in-out;
-        transform: translateZ(-150px) scale(1.2);
-    }
-    
-    @keyframes auroraWave1 {
-        0% { transform: translateZ(-300px) scale(1.5) rotateZ(0deg) rotateX(10deg); }
-        100% { transform: translateZ(-300px) scale(1.5) rotateZ(15deg) rotateX(-10deg); }
-    }
-    
-    @keyframes auroraWave2 {
-        0% { transform: translateZ(-150px) scale(1.2) rotateZ(-10deg) rotateY(10deg); }
-        100% { transform: translateZ(-150px) scale(1.2) rotateZ(5deg) rotateY(-5deg); }
-    }
-
     .chart-container {
-        transform-style: preserve-3d;
         background: rgba(0,0,0,0.3);
         border-radius: var(--border-radius-md);
         padding: 10px;
         box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
-        border: 1px solid rgba(157,78,221,0.2);
-        transition: transform 0.1s;
+        border: 1px solid rgba(255,255,255,0.1);
     }
     
     .form-input {
         background: rgba(0,0,0,0.4);
-        border: 1px solid rgba(157,78,221,0.4);
+        border: 1px solid rgba(255,255,255,0.2);
         color: #fff;
     }
 </style>
-{% endblock %}
-
-{% block scene_orbs %}
-<!-- No orbs for trends page -->
 {% endblock %}
 
 {% block content %}

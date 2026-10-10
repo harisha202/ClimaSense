@@ -32,8 +32,10 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // Bypass websockets, socket.io polling, and dynamic proxy endpoints
+  if (event.request.url.includes('/socket.io/') || event.request.url.includes('/api/')) return;
   
-  // Try network first, fallback to cache for API calls or HTML
+  // Try network first, fallback to cache for static assets
   event.respondWith(
     fetch(event.request)
       .then((response) => {

@@ -6,9 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error('Service Worker registration failed', err));
     }
 
-    // Load saved cities & recent searches
+    // Load saved cities
     window.fetchSavedCities();
-    window.fetchRecentSearches();
 
     const searchBtn = document.getElementById('search-btn');
     const cityInput = document.getElementById('city-input');
@@ -18,11 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn = document.querySelector('.close-btn');
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     
-    // Check if city was passed in URL (from history)
+    // Check if city was passed in URL or saved last city
     const urlParams = new URLSearchParams(window.location.search);
-    const initialCity = urlParams.get('city');
+    const initialCity = urlParams.get('city') || localStorage.getItem('lastCity') || 'Bengaluru';
     
-    if (initialCity) {
+    if (initialCity && cityInput) {
         cityInput.value = initialCity;
         fetchWeather(initialCity);
     }
@@ -44,34 +43,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Autocomplete simulation
-    cityInput.addEventListener('input', (e) => {
-        const val = e.target.value.toLowerCase();
-        const suggestionsRow = document.getElementById('suggestions-row');
-        const popularCities = ['Bengaluru', 'London', 'Tokyo', 'Paris', 'New York', 'Dubai', 'Sydney'];
-        
-        if (val.length > 1) {
-            const matches = popularCities.filter(c => c.toLowerCase().startsWith(val));
-            if (matches.length > 0) {
-                suggestionsRow.innerHTML = '';
-                matches.forEach(m => {
-                    const pill = document.createElement('div');
-                    pill.style.cssText = 'padding: 0.5rem 1rem; border-radius: 20px; background: var(--accent); color: #000; font-weight: bold; font-size: 0.9rem; cursor: pointer;';
-                    pill.textContent = m;
-                    pill.onclick = () => {
-                        cityInput.value = m;
-                        suggestionsRow.classList.add('hidden');
-                        fetchWeather(m);
-                    };
-                    suggestionsRow.appendChild(pill);
-                });
-                suggestionsRow.classList.remove('hidden');
+    if (cityInput) {
+        cityInput.addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const suggestionsRow = document.getElementById('suggestions-row');
+            if (!suggestionsRow) return;
+            const popularCities = ['Bengaluru', 'London', 'Tokyo', 'Paris', 'New York', 'Dubai', 'Sydney'];
+            
+            if (val.length > 1) {
+                const matches = popularCities.filter(c => c.toLowerCase().startsWith(val));
+                if (matches.length > 0) {
+                    suggestionsRow.innerHTML = '';
+                    matches.forEach(m => {
+                        const pill = document.createElement('div');
+                        pill.style.cssText = 'padding: 0.5rem 1rem; border-radius: 20px; background: var(--accent); color: #000; font-weight: bold; font-size: 0.9rem; cursor: pointer;';
+                        pill.textContent = m;
+                        pill.onclick = () => {
+                            cityInput.value = m;
+                            suggestionsRow.classList.add('hidden');
+                            fetchWeather(m);
+                        };
+                        suggestionsRow.appendChild(pill);
+                    });
+                    suggestionsRow.classList.remove('hidden');
+                } else {
+                    suggestionsRow.classList.add('hidden');
+                }
             } else {
                 suggestionsRow.classList.add('hidden');
             }
-        } else {
-            suggestionsRow.classList.add('hidden');
-        }
-    });
+        });
+    }
 
     if(exportCsvBtn) {
         exportCsvBtn.addEventListener('click', () => {
@@ -116,7 +118,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const tempUnit = document.getElementById('setting-temp-unit').value;
             const windUnit = document.getElementById('setting-wind-unit').value;
             localStorage.setItem('tempUnit', tempUnit);
+            localStorage.setItem('unit', tempUnit === 'F' ? 'imperial' : 'metric');
             localStorage.setItem('windUnit', windUnit);
+            const unitBtn = document.getElementById('unit-toggle');
+            if (unitBtn) unitBtn.textContent = tempUnit === 'F' ? '°F' : '°C';
             settingsModal.classList.add('hidden');
             window.showToast("Settings saved.");
             
@@ -126,6 +131,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if(window.currentHourlyData) window.renderTimeline(window.currentHourlyData);
         });
     }
+
+    window.addEventListener('unitChanged', () => {
+        if(window.currentWeatherData) window.renderWeather(window.currentWeatherData);
+        if(window.currentForecastData) window.renderForecast(window.currentForecastData);
+        if(window.currentHourlyData) window.renderTimeline(window.currentHourlyData);
+    });
 });
 
 async function fetchWeather(city) {
@@ -137,8 +148,8 @@ async function fetchWeather(city) {
     if(wrapper) wrapper.classList.add('hidden');
     if(banner) banner.classList.add('hidden');
     
-    // Start fetching place background image immediately in parallel!
-    window.fetchBackground(city, '');
+    // Fetch Unsplash city background immediately
+    window.fetchBackground(city);
     
     try {
         const res = await fetch(`/api/weather/${encodeURIComponent(city)}`);
@@ -174,7 +185,6 @@ async function fetchWeather(city) {
             window.fetchUV(lat, lon);
             window.fetchAlerts(lat, lon);
             window.updateTheme(desc);
-            window.fetchRecentSearches(); // refresh recent
             window.renderInsights(data.data, window.currentRainProb);
             
             if(window.joinCityRoom) {
@@ -195,8 +205,8 @@ async function fetchWeather(city) {
 }
 
 window.getTempString = (tempC) => {
-    const unit = localStorage.getItem('tempUnit') || 'C';
-    if(unit === 'F') return Math.round((tempC * 9/5) + 32) + '°F';
+    const isImperial = localStorage.getItem('tempUnit') === 'F' || localStorage.getItem('unit') === 'imperial';
+    if(isImperial) return Math.round((tempC * 9/5) + 32) + '°F';
     return Math.round(tempC) + '°C';
 };
 window.getWindString = (speedMS) => {
@@ -378,14 +388,22 @@ window.fetchAlerts = async (lat, lon) => {
     } catch(e) { console.error(e); }
 };
 
-window.fetchBackground = async (city, desc) => {
+window.fetchBackground = async (city) => {
+    if (!city) return;
     try {
-        const res = await fetch(`/api/background/${encodeURIComponent(city)}/${encodeURIComponent(desc)}`);
+        const res = await fetch(`/api/background/${encodeURIComponent(city)}`);
         const data = await res.json();
-        if(data.success) {
-            document.getElementById('bg-image').style.backgroundImage = `url('${data.url}')`;
+        if(data.success && data.url) {
+            const bgEl = document.getElementById('bg-image');
+            if (bgEl) {
+                const img = new Image();
+                img.onload = () => {
+                    bgEl.style.backgroundImage = `url('${data.url}')`;
+                };
+                img.src = data.url;
+            }
         }
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error('Error fetching background image:', e); }
 };
 
 window.updateTheme = (desc) => {
@@ -453,32 +471,6 @@ window.fetchSavedCities = async () => {
     } catch(e) { console.error(e); }
 };
 
-window.fetchRecentSearches = async () => {
-    const shelf = document.getElementById('recent-cities-shelf');
-    const container = document.getElementById('recent-cities-container');
-    if (!shelf) return;
-    
-    try {
-        const res = await fetch('/api/weather/recent');
-        const data = await res.json();
-        if (data.success && data.recent.length > 0) {
-            container.classList.remove('hidden');
-            shelf.innerHTML = '';
-            data.recent.forEach(c => {
-                const card = document.createElement('div');
-                card.className = 'saved-city-card';
-                card.innerHTML = `<strong>${c}</strong>`;
-                card.onclick = () => {
-                    document.getElementById('city-input').value = c;
-                    fetchWeather(c);
-                };
-                shelf.appendChild(card);
-            });
-        } else {
-            container.classList.add('hidden');
-        }
-    } catch(e) { console.error(e); }
-};
 
 window.unsaveCity = async (e, city) => {
     e.stopPropagation();

@@ -59,58 +59,7 @@ body {
     z-index: 0;
 }
 
-/* Core 3D Engine */
-.scene-3d {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    perspective: 1200px; /* Crucial for 3D depth */
-    overflow: hidden;
-    z-index: -3; /* Behind content, above background image */
-    pointer-events: none;
-}
 
-.layer {
-    position: absolute;
-    top: -10%; left: -10%;
-    width: 120%; height: 120%;
-    transform-style: preserve-3d;
-    will-change: transform;
-}
-
-.orb {
-    position: absolute;
-    border-radius: 50%;
-}
-
-.orb-cloud {
-    /* Default Cloud blobs */
-    background: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 0 40px rgba(255,255,255,0.3);
-    filter: blur(20px);
-}
-.orb-1 { width: 300px; height: 150px; top: 10%; left: 10%; transform: translateZ(-200px); border-radius: 100px; }
-.orb-2 { width: 250px; height: 100px; top: 40%; left: 60%; transform: translateZ(-50px); border-radius: 100px; }
-.orb-3 { width: 400px; height: 180px; top: 70%; left: -10%; transform: translateZ(-300px); border-radius: 100px; }
-
-/* Default Sunny / Cloud Theme applied to Layers */
-.layer-back {
-    transform: translateZ(-600px) scale(1.5);
-    background: linear-gradient(to bottom, rgba(74, 144, 226, 0.2), rgba(240, 248, 255, 0.1));
-}
-
-.layer-mid {
-    transform: translateZ(-300px) scale(1.2);
-    animation: floatClouds 30s infinite linear;
-}
-
-.layer-front {
-    transform: translateZ(-100px) scale(1.1);
-}
-
-@keyframes floatClouds {
-    0% { transform: translateZ(-300px) scale(1.2) translateX(-5%); }
-    100% { transform: translateZ(-300px) scale(1.2) translateX(5%); }
-}
 
 /* Background image layer */
 .bg-image {
@@ -703,75 +652,7 @@ main {
     padding-bottom: 5px;
     color: var(--accent);
 }
-/* Dashboard Specific Styles to append to style.css */
 
-.dashboard-controls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.settings-btn {
-    padding: 1.25rem;
-    font-size: 1.3rem;
-    border-radius: 50%;
-    border: none;
-    cursor: pointer;
-    background: rgba(255,255,255,0.1);
-    color: #fff;
-    backdrop-filter: blur(5px);
-    transition: all 0.3s;
-}
-.settings-btn:hover {
-    background: rgba(255,255,255,0.3);
-}
-
-.dashboard-wrapper {
-    max-width: 1200px;
-    margin: 0 auto 2rem;
-    padding: 0 1rem;
-}
-
-.dashboard-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.btn-icon {
-    background: rgba(0,0,0,0.5);
-    border: 1px solid rgba(255,255,255,0.2);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-.btn-icon:hover {
-    background: var(--accent);
-    color: black;
-}
-
-/* Modern Grid Layout */
-.dashboard-grid-modern {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 1.5rem;
-}
-
-.dashboard-grid-modern > div {
-    padding: 1.5rem;
-    color: #fff;
-}
-.dashboard-grid-modern h3 {
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    padding-bottom: 5px;
-    color: var(--accent);
-}
 
 /* Grid Spanning */
 .card-main-weather { grid-column: span 5; display: flex; flex-direction: column; justify-content: center;}
@@ -919,9 +800,6 @@ main {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 1rem;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
 }
 .shelf-container { padding: 1.5rem; }
 .shelf-scroll { display: flex; gap: 1rem; overflow-x: auto; padding: 0.5rem 0; }
