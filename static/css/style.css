@@ -19,27 +19,31 @@
 }
 
 body.light-theme {
-    --bg-primary: #ffffff;
-    --bg-card: rgba(255, 255, 255, 0.95);
-    --bg-navbar: #ffffff;
-    --text-primary: #121212;
-    --text-secondary: #4a4a4a;
-    --accent: #ffb703;
-    --accent-hover: #fb8500;
+    --bg-primary: #f8fafc;
+    --bg-card: rgba(255, 255, 255, 0.78);
+    --bg-navbar: rgba(255, 255, 255, 0.88);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --accent: #d97706;
+    --accent-hover: #b45309;
     --danger: #e63946;
     --success: #2a9d8f;
+    --card-border: rgba(255, 255, 255, 0.45);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.10);
 }
 
 body.dark-theme {
-    --bg-primary: #121212;
-    --bg-card: rgba(30, 30, 30, 0.4);
-    --bg-navbar: rgba(20, 20, 20, 0.8);
-    --text-primary: #f8f9fa;
-    --text-secondary: #adb5bd;
-    --accent: #ffb703;
-    --accent-hover: #ffcc00;
+    --bg-primary: #0b1120;
+    --bg-card: rgba(15, 23, 42, 0.65);
+    --bg-navbar: rgba(15, 23, 42, 0.85);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent: #fbbf24;
+    --accent-hover: #f59e0b;
     --danger: #ef233c;
     --success: #2a9d8f;
+    --card-border: rgba(255, 255, 255, 0.14);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 * {
@@ -81,9 +85,10 @@ body {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0); /* Removed transparent background as requested */
+    background: linear-gradient(180deg, rgba(15, 23, 42, 0.15) 0%, rgba(15, 23, 42, 0.38) 100%);
     z-index: -1;
     pointer-events: none;
+    transition: background 1s ease;
 }
 
 .navbar {
@@ -95,7 +100,8 @@ body {
     align-items: center;
     padding: 1rem 2rem;
     background: var(--bg-navbar);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     box-shadow: var(--shadow-sm);
     z-index: 1000;
 }
@@ -154,10 +160,16 @@ main {
 /* Glassmorphism utility */
 .glass {
     background: var(--bg-card);
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     border-radius: var(--border-radius-lg);
-    box-shadow: var(--shadow-md);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--card-border);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.glass:hover {
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.22);
 }
 
 /* Search bar */

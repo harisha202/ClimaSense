@@ -11,9 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if(!loadBtn) return;
 
-    loadBtn.addEventListener('click', async () => {
-        primaryCityName = document.getElementById('trend-city').value;
-        secondaryCityName = document.getElementById('compare-city').value;
+    const executeLoad = async () => {
+        primaryCityName = (document.getElementById('trend-city').value || 'London').trim();
+        secondaryCityName = (document.getElementById('compare-city').value || '').trim();
         const range = document.getElementById('trend-range').value;
         
         if(!primaryCityName) return;
@@ -22,21 +22,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fetch Primary City
             const res1 = await fetch(`/api/trends/${encodeURIComponent(primaryCityName)}?range=${range}`);
             const data1 = await res1.json();
-            if(data1.success) {
-                currentDataPrimary = data1.data;
-            } else {
-                currentDataPrimary = [];
-            }
+            currentDataPrimary = data1.success ? data1.data : [];
             
             // Fetch Secondary City if provided
             if (secondaryCityName) {
                 const res2 = await fetch(`/api/trends/${encodeURIComponent(secondaryCityName)}?range=${range}`);
                 const data2 = await res2.json();
-                if(data2.success) {
-                    currentDataSecondary = data2.data;
-                } else {
-                    currentDataSecondary = [];
-                }
+                currentDataSecondary = data2.success ? data2.data : [];
             } else {
                 currentDataSecondary = [];
             }
@@ -48,7 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
             currentDataSecondary = [];
             renderChart();
         }
-    });
+    };
+
+    loadBtn.addEventListener('click', executeLoad);
+    
+    // Auto load default city
+    executeLoad();
 
     tabs.forEach(tab => {
         tab.addEventListener('click', (e) => {
@@ -83,20 +80,16 @@ document.addEventListener('DOMContentLoaded', () => {
             trendChart.destroy();
         }
 
-        const ctx = document.getElementById('trend-canvas').getContext('2d');
-        
         const primaryGrouped = processData(currentDataPrimary);
         const secondaryGrouped = processData(currentDataSecondary);
         
-        // Merge labels from both datasets to ensure x-axis alignment
         const labelSet = new Set([...Object.keys(primaryGrouped), ...Object.keys(secondaryGrouped)]);
-        // Sort dates chronologically (assuming DD MMM format, we might just sort as strings for simplicity if they are within a month, but better to just use the order from the array or sort by actual date)
         const labels = Array.from(labelSet).sort((a,b) => new Date(a + " " + new Date().getFullYear()) - new Date(b + " " + new Date().getFullYear()));
         
         const emptyState = document.getElementById('trend-empty-state');
         const canvas = document.getElementById('trend-canvas');
         
-        if (labels.length < 2) {
+        if (labels.length < 1) {
             if (emptyState) emptyState.classList.remove('hidden');
             if (canvas) canvas.classList.add('hidden');
             return;
@@ -105,24 +98,53 @@ document.addEventListener('DOMContentLoaded', () => {
             if (canvas) canvas.classList.remove('hidden');
         }
 
-        const primaryDataPoints = labels.map(label => primaryGrouped[label] !== undefined ? primaryGrouped[label] : null);
+        const ctx = canvas.getContext('2d');
+        const isDark = document.body.classList.contains('dark-theme');
+        const textColor = isDark ? '#adb5bd' : '#475569';
+        const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+        // Unit adjustment
+        const isImperial = localStorage.getItem('tempUnit') === 'F';
+        const adjustValue = (val) => {
+            if (val === null || val === undefined) return null;
+            if (currentMetric === 'temperature' && isImperial) {
+                return (val * 9/5) + 32;
+            }
+            return val;
+        };
+
+        const primaryDataPoints = labels.map(label => {
+            const v = primaryGrouped[label];
+            return v !== undefined ? adjustValue(v) : null;
+        });
         
+        let unitLabel = '°C';
+        if (currentMetric === 'temperature' && isImperial) unitLabel = '°F';
+        else if (currentMetric === 'humidity') unitLabel = '%';
+        else if (currentMetric === 'wind_speed') unitLabel = ' m/s';
+        else if (currentMetric === 'pressure') unitLabel = ' hPa';
+
         const datasets = [{
-            label: `${primaryCityName} - ${currentMetric.replace('_', ' ').toUpperCase()}`,
+            label: `${primaryCityName} - ${currentMetric.replace('_', ' ').toUpperCase()} (${unitLabel})`,
             data: primaryDataPoints,
-            borderColor: '#ffcc00',
-            backgroundColor: 'rgba(255, 204, 0, 0.2)',
+            borderColor: '#ffb703',
+            backgroundColor: 'rgba(255, 183, 3, 0.18)',
+            borderWidth: 2,
             tension: 0.3,
             fill: true
         }];
 
         if (secondaryCityName && currentDataSecondary.length > 0) {
-            const secondaryDataPoints = labels.map(label => secondaryGrouped[label] !== undefined ? secondaryGrouped[label] : null);
+            const secondaryDataPoints = labels.map(label => {
+                const v = secondaryGrouped[label];
+                return v !== undefined ? adjustValue(v) : null;
+            });
             datasets.push({
-                label: `${secondaryCityName} - ${currentMetric.replace('_', ' ').toUpperCase()}`,
+                label: `${secondaryCityName} - ${currentMetric.replace('_', ' ').toUpperCase()} (${unitLabel})`,
                 data: secondaryDataPoints,
-                borderColor: '#00ccff',
-                backgroundColor: 'rgba(0, 204, 255, 0.2)',
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.18)',
+                borderWidth: 2,
                 tension: 0.3,
                 fill: true
             });
@@ -140,27 +162,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 scales: {
                     y: {
                         beginAtZero: false,
-                        grid: { color: 'rgba(255,255,255,0.1)' },
-                        ticks: { color: '#adb5bd' }
+                        grid: { color: gridColor },
+                        ticks: { color: textColor }
                     },
                     x: {
-                        grid: { color: 'rgba(255,255,255,0.1)' },
-                        ticks: { color: '#adb5bd' }
+                        grid: { color: gridColor },
+                        ticks: { color: textColor }
                     }
                 },
                 plugins: {
-                    legend: { labels: { color: '#f8f9fa' } },
+                    legend: { labels: { color: textColor, font: { weight: '600' } } },
                     tooltip: {
                         callbacks: {
                             label: function(context) {
                                 let label = context.dataset.label || '';
                                 if (label) label += ': ';
                                 if (context.parsed.y !== null) {
-                                    let unit = '°C';
-                                    if(currentMetric === 'humidity') unit = '%';
-                                    else if(currentMetric === 'wind_speed') unit = ' m/s';
-                                    else if(currentMetric === 'pressure') unit = ' hPa';
-                                    label += context.parsed.y.toFixed(1) + unit;
+                                    label += context.parsed.y.toFixed(1) + unitLabel;
                                 }
                                 return label;
                             }

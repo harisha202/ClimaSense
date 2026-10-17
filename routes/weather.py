@@ -9,6 +9,7 @@ from models.search_history import SearchHistory
 from models.weather_log import WeatherLog
 from extensions import db
 from models.saved_city import SavedCity
+from services.ai_service import calculate_comfort_score, get_weather_briefing, answer_weather_chat
 
 weather_bp = Blueprint('weather', __name__)
 
@@ -74,8 +75,37 @@ def api_weather(city):
         else:
             rain_prob = 10
             
-        return jsonify({'success': True, 'data': data, 'ai_summary': summary, 'rain_probability': rain_prob})
+        # Compute grounded comfort score
+        comfort = calculate_comfort_score(data['main']['temp'], data['main']['humidity'], data['wind']['speed'])
+            
+        return jsonify({
+            'success': True,
+            'data': data,
+            'ai_summary': summary,
+            'rain_probability': rain_prob,
+            'comfort_score': comfort['score'],
+            'comfort_label': comfort['label']
+        })
     return jsonify({'success': False, 'message': 'City not found or API error'}), 404
+
+@weather_bp.route('/api/weather/<city>/briefing')
+@login_required
+def api_weather_briefing(city):
+    force_refresh = request.args.get('refresh') == 'true'
+    res = get_weather_briefing(city, force_refresh=force_refresh)
+    status_code = 200 if res.get('success') else 404
+    return jsonify(res), status_code
+
+@weather_bp.route('/api/weather/chat', methods=['POST'])
+@login_required
+def api_weather_chat():
+    payload = request.get_json(silent=True) or {}
+    message = payload.get('message', '').strip()
+    city = payload.get('city', 'Bengaluru').strip()
+    if not message:
+        return jsonify({'success': False, 'message': 'Message cannot be empty.'}), 400
+    res = answer_weather_chat(message, current_city=city, user_id=current_user.id)
+    return jsonify(res)
 
 @weather_bp.route('/api/weather/recent')
 @login_required
@@ -127,13 +157,14 @@ def api_weather_geo():
         return jsonify({'success': True, 'data': data})
     return jsonify({'success': False, 'message': 'Location not found or API error'}), 404
 
-@weather_bp.route('/api/background/<city>', defaults={'description': ''})
-@weather_bp.route('/api/background/<city>/', defaults={'description': ''})
-@weather_bp.route('/api/background/<city>/<description>')
+@weather_bp.route('/api/background/<city>', defaults={'description': ''}, strict_slashes=False)
+@weather_bp.route('/api/background/<city>/<description>', strict_slashes=False)
 @login_required
 def api_background(city, description=''):
-    img_url = get_background_image(city, description)
-    return jsonify({'success': True, 'url': img_url})
+    bg_data = get_background_image(city, description)
+    if isinstance(bg_data, dict):
+        return jsonify({'success': True, **bg_data})
+    return jsonify({'success': True, 'url': bg_data})
 @weather_bp.route('/api/cities/save', methods=['POST'])
 @login_required
 def save_city():

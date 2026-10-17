@@ -28,6 +28,15 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', MAIL_USERNAME)
 
+    # Google Gemini AI Configuration
+    AI_PROVIDER = os.environ.get('AI_PROVIDER', 'gemini')
+    AI_API_KEY = os.environ.get('AI_API_KEY') or os.environ.get('GEMINI_API_KEY')
+    AI_MODEL = os.environ.get('AI_MODEL', 'gemini-1.5-flash')
+    AI_BRIEFING_CACHE_TTL = int(os.environ.get('AI_BRIEFING_CACHE_TTL', 1800))
+    AI_CHAT_RATE_LIMIT = int(os.environ.get('AI_CHAT_RATE_LIMIT', 10))
+    AI_MAX_OUTPUT_TOKENS = int(os.environ.get('AI_MAX_OUTPUT_TOKENS', 800))
+    AI_REQUEST_TIMEOUT = int(os.environ.get('AI_REQUEST_TIMEOUT', 10))
+
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///app.db')

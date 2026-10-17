@@ -21,6 +21,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const initialCity = urlParams.get('city') || localStorage.getItem('lastCity') || 'Bengaluru';
     
+    // Initialize AI Chat Widget
+    if (window.initChatWidget) window.initChatWidget();
+    
+    const refreshBriefingBtn = document.getElementById('refresh-briefing-btn');
+    if (refreshBriefingBtn) {
+        refreshBriefingBtn.addEventListener('click', () => {
+            const currentCity = window.currentWeatherData ? window.currentWeatherData.name : (localStorage.getItem('lastCity') || 'Bengaluru');
+            window.fetchBriefing(currentCity, true);
+        });
+    }
+
     if (initialCity && cityInput) {
         cityInput.value = initialCity;
         fetchWeather(initialCity);
@@ -42,36 +53,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Autocomplete simulation
+    // Autocomplete simulation with 300ms debounce
+    let debounceTimer = null;
     if (cityInput) {
         cityInput.addEventListener('input', (e) => {
-            const val = e.target.value.toLowerCase();
-            const suggestionsRow = document.getElementById('suggestions-row');
-            if (!suggestionsRow) return;
-            const popularCities = ['Bengaluru', 'London', 'Tokyo', 'Paris', 'New York', 'Dubai', 'Sydney'];
-            
-            if (val.length > 1) {
-                const matches = popularCities.filter(c => c.toLowerCase().startsWith(val));
-                if (matches.length > 0) {
-                    suggestionsRow.innerHTML = '';
-                    matches.forEach(m => {
-                        const pill = document.createElement('div');
-                        pill.style.cssText = 'padding: 0.5rem 1rem; border-radius: 20px; background: var(--accent); color: #000; font-weight: bold; font-size: 0.9rem; cursor: pointer;';
-                        pill.textContent = m;
-                        pill.onclick = () => {
-                            cityInput.value = m;
-                            suggestionsRow.classList.add('hidden');
-                            fetchWeather(m);
-                        };
-                        suggestionsRow.appendChild(pill);
-                    });
-                    suggestionsRow.classList.remove('hidden');
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const val = e.target.value.toLowerCase().trim();
+                const suggestionsRow = document.getElementById('suggestions-row');
+                if (!suggestionsRow) return;
+                const popularCities = ['Bengaluru', 'London', 'Tokyo', 'Paris', 'New York', 'Dubai', 'Sydney', 'Mumbai', 'Singapore', 'Berlin'];
+                
+                if (val.length > 1) {
+                    const matches = popularCities.filter(c => c.toLowerCase().startsWith(val));
+                    if (matches.length > 0) {
+                        suggestionsRow.innerHTML = '';
+                        matches.forEach(m => {
+                            const pill = document.createElement('div');
+                            pill.style.cssText = 'padding: 0.5rem 1rem; border-radius: 20px; background: var(--accent); color: #000; font-weight: bold; font-size: 0.9rem; cursor: pointer;';
+                            pill.textContent = m;
+                            pill.onclick = () => {
+                                cityInput.value = m;
+                                suggestionsRow.classList.add('hidden');
+                                fetchWeather(m);
+                            };
+                            suggestionsRow.appendChild(pill);
+                        });
+                        suggestionsRow.classList.remove('hidden');
+                    } else {
+                        suggestionsRow.classList.add('hidden');
+                    }
                 } else {
                     suggestionsRow.classList.add('hidden');
                 }
-            } else {
-                suggestionsRow.classList.add('hidden');
-            }
+            }, 300);
+        });
+    }
         });
     }
 
@@ -139,7 +156,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+let currentSearchId = 0;
+
 async function fetchWeather(city) {
+    const searchId = ++currentSearchId;
     const spinner = document.getElementById('loading-spinner');
     const wrapper = document.getElementById('dashboard-wrapper');
     const banner = document.getElementById('alert-banner');
@@ -154,13 +174,18 @@ async function fetchWeather(city) {
     try {
         const res = await fetch(`/api/weather/${encodeURIComponent(city)}`);
         const data = await res.json();
+        
+        // Prevent stale responses from overwriting newer search
+        if (searchId !== currentSearchId) return;
+        
         if (data.success) {
             localStorage.setItem('lastCity', data.data.name);
             window.currentWeatherData = data.data; // save for unit toggle
-            window.renderWeather(data.data);
+            window.renderWeather(data.data, data.comfort_score, data.comfort_label);
             
             if(data.ai_summary) {
-                document.getElementById('ai-summary-text').textContent = data.ai_summary;
+                const aiSumEl = document.getElementById('ai-summary-text');
+                if (aiSumEl) aiSumEl.textContent = data.ai_summary;
             }
             
             window.currentRainProb = data.rain_probability || 10;
@@ -179,13 +204,16 @@ async function fetchWeather(city) {
             const lat = data.data.coord.lat;
             const lon = data.data.coord.lon;
             const desc = data.data.weather[0].description;
+            const icon = data.data.weather[0].icon;
             
             window.fetchForecast(data.data.name);
             window.fetchAQI(lat, lon);
             window.fetchUV(lat, lon);
             window.fetchAlerts(lat, lon);
             window.updateTheme(desc);
+            window.updateWeatherEffects(desc, icon);
             window.renderInsights(data.data, window.currentRainProb);
+            window.fetchBriefing(data.data.name);
             
             if(window.joinCityRoom) {
                 window.joinCityRoom(data.data.name);
@@ -200,7 +228,7 @@ async function fetchWeather(city) {
         }
     } catch(e) {
         console.error(e);
-        if(spinner) spinner.classList.add('hidden');
+        if (searchId === currentSearchId && spinner) spinner.classList.add('hidden');
     }
 }
 
@@ -209,6 +237,7 @@ window.getTempString = (tempC) => {
     if(isImperial) return Math.round((tempC * 9/5) + 32) + '°F';
     return Math.round(tempC) + '°C';
 };
+
 window.getWindString = (speedMS) => {
     const unit = localStorage.getItem('windUnit') || 'kmh';
     if(unit === 'mph') return Math.round(speedMS * 2.23694) + ' mph';
@@ -216,17 +245,172 @@ window.getWindString = (speedMS) => {
     return Math.round(speedMS * 3.6) + ' km/h'; // default kmh
 };
 
-window.getWeatherEmoji = (desc) => {
-    if(desc.includes('thunderstorm') || desc.includes('storm')) return '⛈️';
-    if(desc.includes('snow')) return '❄️';
-    if(desc.includes('rain') || desc.includes('drizzle')) return '🌧️';
-    if(desc.includes('fog') || desc.includes('mist')) return '🌫️';
-    if(desc.includes('cloud')) return '☁️';
-    if(desc.includes('clear')) return '☀️';
-    return '☀️'; // default
+window.getWeatherEmoji = (desc, icon, windSpeed) => {
+    desc = (desc || '').toLowerCase();
+    icon = icon || '';
+    const isNight = icon.endsWith('n');
+    
+    if (desc.includes('thunderstorm') || desc.includes('storm')) return '⛈️';
+    if (desc.includes('snow') || desc.includes('sleet') || desc.includes('blizzard')) return '❄️';
+    if (desc.includes('drizzle')) return '🌦️';
+    if (desc.includes('heavy rain') || desc.includes('shower rain')) return '🌧️';
+    if (desc.includes('rain')) return isNight ? '🌧️' : '🌦️';
+    if (desc.includes('fog') || desc.includes('mist') || desc.includes('haze') || desc.includes('smoke')) return '🌫️';
+    if (windSpeed && windSpeed > 10) return '🌬️';
+    if (desc.includes('few clouds') || desc.includes('scattered clouds')) return isNight ? '☁️' : '🌤️';
+    if (desc.includes('broken clouds') || desc.includes('partly cloudy')) return isNight ? '☁️' : '⛅';
+    if (desc.includes('cloud') || desc.includes('overcast')) return '☁️';
+    if (desc.includes('clear')) return isNight ? '🌙' : '☀️';
+    return isNight ? '🌙' : '☀️';
 };
 
-window.renderWeather = (data) => {
+window.updateWeatherEffects = (desc, icon) => {
+    const layer = document.getElementById('weather-effects-layer');
+    if (!layer) return;
+    layer.className = 'weather-effects-layer';
+    desc = (desc || '').toLowerCase();
+    icon = icon || '';
+    
+    if (desc.includes('thunderstorm') || desc.includes('storm')) {
+        layer.classList.add('thunderstorm', 'rain');
+    } else if (desc.includes('rain') || desc.includes('drizzle')) {
+        layer.classList.add('rain');
+    } else if (desc.includes('snow')) {
+        layer.classList.add('snow');
+    } else if (desc.includes('cloud') || desc.includes('overcast')) {
+        layer.classList.add('clouds');
+    } else if (desc.includes('clear')) {
+        if (!icon.endsWith('n')) {
+            layer.classList.add('sunshine');
+        }
+    }
+};
+
+window.fetchBriefing = async (city, forceRefresh = false) => {
+    const skeleton = document.getElementById('briefing-skeleton');
+    const textEl = document.getElementById('briefing-text');
+    const badgeEl = document.getElementById('briefing-badge');
+    const timeEl = document.getElementById('briefing-timestamp');
+    const mySearchId = currentSearchId;
+    
+    if (skeleton) skeleton.classList.remove('hidden');
+    if (textEl) textEl.style.display = 'none';
+    
+    try {
+        const res = await fetch(`/api/weather/${encodeURIComponent(city)}/briefing?refresh=${forceRefresh ? 'true' : 'false'}`);
+        const data = await res.json();
+        if (mySearchId !== currentSearchId) return;
+        
+        if (skeleton) skeleton.classList.add('hidden');
+        if (textEl) {
+            textEl.style.display = 'block';
+            textEl.textContent = data.briefing || "Weather briefing is currently unavailable.";
+        }
+        if (badgeEl) {
+            if (data.is_ai_generated) {
+                badgeEl.className = 'ai-badge';
+                badgeEl.innerHTML = `<i class="fa-solid fa-sparkles"></i> ${data.model || 'Gemini AI'}`;
+            } else {
+                badgeEl.className = 'ai-badge';
+                badgeEl.style.background = 'rgba(16, 185, 129, 0.15)';
+                badgeEl.style.color = '#10b981';
+                badgeEl.innerHTML = `<i class="fa-solid fa-calculator"></i> Grounded Engine`;
+            }
+        }
+        if (timeEl) {
+            timeEl.textContent = data.cached ? `Cached (${data.timestamp})` : `Updated (${data.timestamp})`;
+        }
+    } catch(e) {
+        console.error('Error fetching briefing:', e);
+        if (mySearchId !== currentSearchId) return;
+        if (skeleton) skeleton.classList.add('hidden');
+        if (textEl) {
+            textEl.style.display = 'block';
+            textEl.textContent = "AI briefing could not be loaded at this time.";
+        }
+    }
+};
+
+window.initChatWidget = () => {
+    const toggleBtn = document.getElementById('chat-widget-toggle');
+    const chatPanel = document.getElementById('chat-panel');
+    const closeBtn = document.getElementById('close-chat-btn');
+    const sendBtn = document.getElementById('chat-send-btn');
+    const chatInput = document.getElementById('chat-input');
+    const chatBody = document.getElementById('chat-body');
+    const chips = document.querySelectorAll('.chat-chip');
+    
+    if (!toggleBtn || !chatPanel) return;
+    
+    toggleBtn.addEventListener('click', () => {
+        chatPanel.classList.toggle('hidden');
+        if (!chatPanel.classList.contains('hidden') && chatInput) {
+            chatInput.focus();
+        }
+    });
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => chatPanel.classList.add('hidden'));
+    }
+    
+    chips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            const q = chip.getAttribute('data-question');
+            if (q && chatInput) {
+                chatInput.value = q;
+                handleChatSend();
+            }
+        });
+    });
+    
+    const handleChatSend = async () => {
+        const text = chatInput.value.trim();
+        if (!text) return;
+        
+        // Append user message
+        const userBubble = document.createElement('div');
+        userBubble.className = 'chat-bubble user';
+        userBubble.textContent = text;
+        chatBody.appendChild(userBubble);
+        chatInput.value = '';
+        
+        // Typing indicator
+        const aiBubble = document.createElement('div');
+        aiBubble.className = 'chat-bubble ai';
+        aiBubble.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Consulting weather data...';
+        chatBody.appendChild(aiBubble);
+        chatBody.scrollTop = chatBody.scrollHeight;
+        
+        const activeCity = window.currentWeatherData ? window.currentWeatherData.name : (localStorage.getItem('lastCity') || 'Bengaluru');
+        
+        try {
+            const res = await fetch('/api/weather/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ message: text, city: activeCity })
+            });
+            const data = await res.json();
+            if (data.success && data.answer) {
+                aiBubble.textContent = data.answer;
+            } else {
+                aiBubble.textContent = data.message || "I could not retrieve an answer right now. Please try again.";
+            }
+        } catch(e) {
+            console.error('Chat error:', e);
+            aiBubble.textContent = "Network error. Please check your connection.";
+        }
+        chatBody.scrollTop = chatBody.scrollHeight;
+    };
+    
+    if (sendBtn) sendBtn.addEventListener('click', handleChatSend);
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleChatSend();
+        });
+    }
+};
+
+window.renderWeather = (data, comfortScore, comfortLabel) => {
     document.getElementById('loading-spinner').classList.add('hidden');
     const wrapper = document.getElementById('dashboard-wrapper');
     if (wrapper) wrapper.classList.remove('hidden');
@@ -234,8 +418,9 @@ window.renderWeather = (data) => {
     document.getElementById('city-name').textContent = `📍 ${data.name}`;
     
     const descStr = data.weather[0].description;
+    const iconCode = data.weather[0].icon;
     const tempStr = window.getTempString(data.main.temp);
-    const emoji = window.getWeatherEmoji(descStr);
+    const emoji = window.getWeatherEmoji(descStr, iconCode, data.wind ? data.wind.speed : 0);
     
     // Capitalize description
     const capDesc = descStr.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -250,7 +435,7 @@ window.renderWeather = (data) => {
     
     document.getElementById('city-local-time').innerHTML = `<i class="fa-regular fa-clock"></i> ${localTimeStr} (Local)`;
     
-    // Main (hidden but kept for any logic that might check it)
+    // Main
     document.getElementById('temperature').textContent = tempStr;
     document.getElementById('weather-desc').textContent = descStr;
     document.getElementById('weather-icon').src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@4x.png`;
@@ -262,6 +447,16 @@ window.renderWeather = (data) => {
     document.getElementById('wind-speed').textContent = window.getWindString(data.wind.speed);
     document.getElementById('visibility').textContent = (data.visibility / 1000).toFixed(1) + ' km';
     document.getElementById('pressure').textContent = data.main.pressure + ' hPa';
+    
+    // Comfort Score KPI
+    const csVal = document.getElementById('comfort-score-val');
+    const csLabel = document.getElementById('comfort-score-label');
+    if (csVal) csVal.textContent = (comfortScore !== undefined && comfortScore !== null) ? `${comfortScore}/100` : '--';
+    if (csLabel) csLabel.textContent = comfortLabel ? `Comfort: ${comfortLabel}` : 'Comfort Score';
+    
+    // Unsplash attribution update
+    const attrCity = document.getElementById('attr-city');
+    if (attrCity) attrCity.textContent = data.name;
     
     const rain = data.rain ? (data.rain['1h'] || 0) : 0;
     document.getElementById('rain').textContent = rain + ' mm';
@@ -401,6 +596,15 @@ window.fetchBackground = async (city) => {
                     bgEl.style.backgroundImage = `url('${data.url}')`;
                 };
                 img.src = data.url;
+            }
+            
+            // Photographer and Unsplash attribution compliance
+            const attrEl = document.getElementById('photo-attribution');
+            if (attrEl) {
+                const photoName = data.photographer_name || 'Unsplash Community';
+                const photoUrl = data.photographer_url || 'https://unsplash.com/?utm_source=ClimaSense&utm_medium=referral';
+                const source = data.source || 'Unsplash';
+                attrEl.innerHTML = `<i class="fa-solid fa-camera"></i> Photo by <a href="${photoUrl}" target="_blank" rel="noopener">${photoName}</a> on <a href="https://unsplash.com/?utm_source=ClimaSense&utm_medium=referral" target="_blank" rel="noopener">${source}</a>`;
             }
         }
     } catch(e) { console.error('Error fetching background image:', e); }

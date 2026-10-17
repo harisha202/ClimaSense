@@ -1,6 +1,36 @@
+import time
+import random
 import requests
 from flask import current_app
 from services.cache_service import cache_get, cache_set
+
+def _safe_request(url, timeout=8, max_retries=2):
+    """
+    Executes an HTTP GET with bounded retries, exponential backoff,
+    and jitter for transient server/network failures. Permanent client
+    errors (401, 403, 404) are returned immediately without retrying.
+    """
+    for attempt in range(max_retries + 1):
+        try:
+            resp = requests.get(url, timeout=timeout)
+            if resp.status_code == 200:
+                return resp
+            # Permanent client errors: don't retry
+            if resp.status_code in (401, 403, 404):
+                return resp
+            # Transient 5xx server errors: retry with backoff
+            if resp.status_code >= 500 and attempt < max_retries:
+                time.sleep(0.2 * (2 ** attempt) + random.uniform(0.05, 0.15))
+                continue
+            return resp
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+            if attempt < max_retries:
+                time.sleep(0.2 * (2 ** attempt) + random.uniform(0.05, 0.15))
+                continue
+            return None
+        except Exception:
+            return None
+    return None
 
 def get_current_weather(city):
     """Current weather by city name"""
@@ -9,14 +39,14 @@ def get_current_weather(city):
     if cached:
         return cached
 
-    api_key = current_app.config['OPENWEATHER_API_KEY']
+    api_key = current_app.config.get('OPENWEATHER_API_KEY')
     if not api_key:
         return None
 
     url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&units=metric&appid={api_key}"
     try:
-        resp = requests.get(url, timeout=10)
-        if resp.status_code == 200:
+        resp = _safe_request(url, timeout=8)
+        if resp and resp.status_code == 200:
             data = resp.json()
             cache_set(cache_key, data)
             return data
@@ -31,11 +61,14 @@ def get_weather_by_coords(lat, lon):
     if cached:
         return cached
 
-    api_key = current_app.config['OPENWEATHER_API_KEY']
+    api_key = current_app.config.get('OPENWEATHER_API_KEY')
+    if not api_key:
+        return None
+
     url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&units=metric&appid={api_key}"
     try:
-        resp = requests.get(url, timeout=10)
-        if resp.status_code == 200:
+        resp = _safe_request(url, timeout=8)
+        if resp and resp.status_code == 200:
             data = resp.json()
             cache_set(cache_key, data)
             return data
@@ -50,11 +83,14 @@ def get_forecast(city):
     if cached:
         return cached
 
-    api_key = current_app.config['OPENWEATHER_API_KEY']
+    api_key = current_app.config.get('OPENWEATHER_API_KEY')
+    if not api_key:
+        return None
+
     url = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&units=metric&appid={api_key}"
     try:
-        resp = requests.get(url, timeout=10)
-        if resp.status_code == 200:
+        resp = _safe_request(url, timeout=8)
+        if resp and resp.status_code == 200:
             data = resp.json()
             cache_set(cache_key, data)
             return data
@@ -69,11 +105,14 @@ def get_aqi(lat, lon):
     if cached:
         return cached
 
-    api_key = current_app.config['OPENWEATHER_API_KEY']
+    api_key = current_app.config.get('OPENWEATHER_API_KEY')
+    if not api_key:
+        return None
+
     url = f"https://api.openweathermap.org/data/2.5/air_pollution?lat={lat}&lon={lon}&appid={api_key}"
     try:
-        resp = requests.get(url, timeout=10)
-        if resp.status_code == 200:
+        resp = _safe_request(url, timeout=8)
+        if resp and resp.status_code == 200:
             data = resp.json()
             cache_set(cache_key, data)
             return data
@@ -88,11 +127,14 @@ def get_uv_index(lat, lon):
     if cached:
         return cached
 
-    api_key = current_app.config['OPENWEATHER_API_KEY']
+    api_key = current_app.config.get('OPENWEATHER_API_KEY')
+    if not api_key:
+        return {'value': 5.0}
+
     url = f"https://api.openweathermap.org/data/2.5/uvi?lat={lat}&lon={lon}&appid={api_key}"
     try:
-        resp = requests.get(url, timeout=5)
-        if resp.status_code == 200:
+        resp = _safe_request(url, timeout=5)
+        if resp and resp.status_code == 200:
             data = resp.json()
             cache_set(cache_key, data)
             return data
@@ -110,13 +152,12 @@ def get_uv_index(lat, lon):
     return data
 
 def get_alerts(lat, lon):
-    """Severe weather alerts using fallback logic (since OneCall is paid)"""
+    """Severe weather alerts using condition threshold detection"""
     cache_key = f"alerts_{lat}_{lon}"
     cached = cache_get(cache_key)
     if cached:
         return cached
 
-    # Instead of hitting the paid onecall API, we check current weather for severe conditions
     weather = get_weather_by_coords(lat, lon)
     if weather and 'weather' in weather and len(weather['weather']) > 0:
         desc = weather['weather'][0]['description'].lower()

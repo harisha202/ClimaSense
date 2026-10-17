@@ -4,11 +4,284 @@
 
 {% block extra_css %}
 <style>
-    /* Inline styles for dashboard specific structure if needed, but mostly in style.css */
+    /* Dynamic Weather Visuals Layer */
+    .weather-effects-layer {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+        transition: opacity 0.8s ease;
+    }
+    
+    /* Sunshine radiant glow */
+    .weather-effects-layer.sunshine {
+        background: radial-gradient(circle at 85% 15%, rgba(255, 204, 0, 0.22) 0%, rgba(255, 183, 3, 0.08) 35%, transparent 65%);
+    }
+    
+    /* Rain particle animation */
+    .weather-effects-layer.rain::before {
+        content: "";
+        position: absolute;
+        top: -100px;
+        left: 0;
+        width: 100%;
+        height: 150%;
+        background-image: repeating-linear-gradient(transparent, transparent 20px, rgba(147, 197, 253, 0.35) 21px, rgba(96, 165, 250, 0.35) 24px);
+        animation: rainFall 0.75s linear infinite;
+        opacity: 0.65;
+    }
+    @keyframes rainFall {
+        0% { transform: translateY(0); }
+        100% { transform: translateY(80px); }
+    }
+    
+    /* Thunderstorm lightning flash */
+    .weather-effects-layer.thunderstorm {
+        animation: lightningFlash 8s infinite ease-in-out;
+    }
+    @keyframes lightningFlash {
+        0%, 93%, 97%, 100% { background: transparent; }
+        94% { background: rgba(255, 255, 255, 0.28); }
+        96% { background: rgba(220, 235, 255, 0.22); }
+    }
+    
+    /* Subtle cloud drift */
+    .weather-effects-layer.clouds::after {
+        content: "";
+        position: absolute;
+        top: 10%;
+        left: -20%;
+        width: 140%;
+        height: 50%;
+        background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
+        animation: cloudDrift 45s linear infinite alternate;
+    }
+    @keyframes cloudDrift {
+        from { transform: translateX(-5%); }
+        to { transform: translateX(5%); }
+    }
+    
+    @media (prefers-reduced-motion: reduce) {
+        .weather-effects-layer, .weather-effects-layer::before, .weather-effects-layer::after {
+            animation: none !important;
+            transition: none !important;
+        }
+    }
+
+    /* AI Weather Briefing Card */
+    .card-ai-briefing {
+        grid-column: 1 / -1;
+        padding: 1.5rem 1.8rem;
+        border-radius: var(--border-radius-lg);
+        position: relative;
+        overflow: hidden;
+        border-left: 4px solid var(--accent);
+    }
+    
+    .briefing-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.8rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .ai-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(168, 85, 247, 0.2));
+        color: #3b82f6;
+        border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+    body.dark-theme .ai-badge {
+        color: #93c5fd;
+    }
+    
+    .refresh-briefing-btn {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        cursor: pointer;
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+    .refresh-briefing-btn:hover {
+        color: var(--accent);
+        transform: rotate(45deg);
+    }
+
+    /* Floating Chat Widget */
+    .chat-toggle-btn {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        padding: 0.85rem 1.4rem;
+        border-radius: 30px;
+        background: var(--accent);
+        color: #111;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        cursor: pointer;
+        z-index: 1050;
+        border: 1px solid rgba(255,255,255,0.4);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .chat-toggle-btn:hover {
+        transform: translateY(-3px) scale(1.03);
+        box-shadow: 0 12px 28px rgba(0,0,0,0.35);
+    }
+    
+    .chat-panel {
+        position: fixed;
+        bottom: 6rem;
+        right: 2rem;
+        width: 380px;
+        max-width: calc(100vw - 3rem);
+        height: 520px;
+        max-height: calc(100vh - 8rem);
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        z-index: 1050;
+        box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+        overflow: hidden;
+        border: 1px solid rgba(255,255,255,0.25);
+    }
+    
+    .chat-header {
+        padding: 1rem 1.2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(150,150,150,0.2);
+    }
+    
+    .chat-body {
+        flex: 1;
+        padding: 1rem;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+    
+    .chat-bubble {
+        padding: 0.75rem 1rem;
+        border-radius: 14px;
+        font-size: 0.9rem;
+        line-height: 1.45;
+        max-width: 85%;
+        word-wrap: break-word;
+    }
+    .chat-bubble.user {
+        align-self: flex-end;
+        background: var(--accent);
+        color: #111;
+        font-weight: 500;
+        border-bottom-right-radius: 4px;
+    }
+    .chat-bubble.ai {
+        align-self: flex-start;
+        background: rgba(255, 255, 255, 0.8);
+        color: #1e293b;
+        border-bottom-left-radius: 4px;
+        border: 1px solid rgba(0,0,0,0.08);
+    }
+    body.dark-theme .chat-bubble.ai {
+        background: rgba(30, 41, 59, 0.9);
+        color: #f1f5f9;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .chat-chips-container {
+        padding: 0.5rem 1rem;
+        display: flex;
+        gap: 0.4rem;
+        overflow-x: auto;
+        border-top: 1px solid rgba(150,150,150,0.15);
+        white-space: nowrap;
+    }
+    .chat-chip {
+        padding: 0.35rem 0.75rem;
+        border-radius: 16px;
+        font-size: 0.78rem;
+        background: rgba(255,255,255,0.15);
+        border: 1px solid rgba(150,150,150,0.25);
+        cursor: pointer;
+        color: var(--text-primary);
+        transition: background 0.2s;
+    }
+    .chat-chip:hover {
+        background: var(--accent);
+        color: #000;
+    }
+    
+    .chat-input-row {
+        padding: 0.8rem 1rem;
+        display: flex;
+        gap: 0.5rem;
+        border-top: 1px solid rgba(150,150,150,0.2);
+    }
+    .chat-input-row input {
+        flex: 1;
+        padding: 0.6rem 1rem;
+        border-radius: 20px;
+        border: 1px solid rgba(150,150,150,0.3);
+        background: rgba(255,255,255,0.1);
+        color: var(--text-primary);
+        font-size: 0.88rem;
+    }
+    .chat-input-row input:focus {
+        outline: none;
+        border-color: var(--accent);
+    }
+    .chat-input-row button {
+        padding: 0.6rem 1rem;
+        border-radius: 20px;
+        background: var(--accent);
+        color: #111;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    
+    /* Unsplash attribution */
+    .photo-attribution {
+        position: fixed;
+        bottom: 0.5rem;
+        left: 1rem;
+        padding: 0.35rem 0.85rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        opacity: 0.85;
+        z-index: 100;
+    }
+    .photo-attribution a {
+        color: var(--accent);
+        text-decoration: underline;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+<!-- Dynamic Weather Visual Effects Layer -->
+<div id="weather-effects-layer" class="weather-effects-layer"></div>
+
 <div id="alert-banner" class="alert-banner hidden"></div>
 <div id="highlights-banner" class="highlights-banner glass hidden" style="margin-bottom: 1rem; padding: 0.8rem 1.5rem; display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 1rem;">
     <div><i class="fa-solid fa-cloud-sun" style="color:var(--accent);"></i> <strong id="hb-weather">Pleasant Weather</strong></div>
@@ -50,7 +323,7 @@
     <!-- Main Grid -->
     <div class="dashboard-grid-modern">
         
-        <!-- Left Column: Main Weather & AI Summary -->
+        <!-- Left Column: Main Weather & Conditions -->
         <div class="glass card-main-weather">
             <h2 id="city-name" class="city-title"></h2>
             <div id="city-subtitle" style="font-size: 1.5rem; font-weight: 500; margin-bottom: 5px;"></div>
@@ -108,7 +381,32 @@
                     <div class="kpi-val"><strong id="pressure">--</strong></div>
                     <div class="kpi-label">Pressure</div>
                 </div>
+                <!-- Grounded Comfort Index KPI -->
+                <div class="kpi-item">
+                    <i class="fa-solid fa-face-smile" style="color: #10b981;"></i>
+                    <div class="kpi-val"><strong id="comfort-score-val">--</strong></div>
+                    <div class="kpi-label" id="comfort-score-label">Comfort Score</div>
+                </div>
             </div>
+        </div>
+
+        <!-- Full Width: AI Weather Briefing Card (Gemini Grounded) -->
+        <div class="glass card-ai-briefing" id="card-ai-briefing">
+            <div class="briefing-header">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <i class="fa-solid fa-sparkles" style="color: var(--accent); font-size: 1.25rem;"></i>
+                    <h3 style="margin: 0; font-size: 1.15rem;">AI Weather Briefing</h3>
+                    <span id="briefing-badge" class="ai-badge"><i class="fa-solid fa-brain"></i> Gemini AI</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.8rem;">
+                    <span id="briefing-timestamp" style="font-size: 0.78rem; opacity: 0.75;">Fresh data</span>
+                    <button id="refresh-briefing-btn" class="refresh-briefing-btn" title="Refresh AI Briefing">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="briefing-skeleton" class="skeleton-pulse hidden" style="height: 60px; border-radius: 8px; background: rgba(150,150,150,0.15);"></div>
+            <p id="briefing-text" style="line-height: 1.65; margin: 0; font-size: 0.96rem;">Loading AI weather insights...</p>
         </div>
 
         <!-- Full Width: Hourly Timeline -->
@@ -207,6 +505,44 @@
         </div>
         <button id="save-settings-btn" class="auth-btn mt-4">Save Settings</button>
     </div>
+</div>
+
+<!-- Floating AI Weather Chat Button & Panel -->
+<button id="chat-widget-toggle" class="chat-toggle-btn glass" title="Chat with ClimaSense AI">
+    <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Ask AI</span>
+</button>
+
+<div id="chat-panel" class="chat-panel glass hidden">
+    <div class="chat-header">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+            <i class="fa-solid fa-robot" style="color:var(--accent);"></i>
+            <strong>ClimaSense AI Assistant</strong>
+        </div>
+        <button id="close-chat-btn" style="background:none; border:none; color:var(--text-primary); font-size:1.2rem; cursor:pointer;">&times;</button>
+    </div>
+    
+    <div class="chat-chips-container">
+        <span class="chat-chip" data-question="Should I carry an umbrella today?">☔ Umbrella?</span>
+        <span class="chat-chip" data-question="What is the best time to dry clothes?">👕 Dry clothes</span>
+        <span class="chat-chip" data-question="Is this a good time for outdoor exercise?">🏃 Exercise?</span>
+        <span class="chat-chip" data-question="What should I wear today?">🧥 What to wear</span>
+    </div>
+    
+    <div id="chat-body" class="chat-body">
+        <div class="chat-bubble ai">
+            👋 Hello! I am your ClimaSense AI Assistant. Ask me anything grounded in real-time weather, travel forecasts, clothing advice, or comparisons!
+        </div>
+    </div>
+    
+    <div class="chat-input-row">
+        <input type="text" id="chat-input" placeholder="Ask about current weather or tips..." maxlength="300" autocomplete="off">
+        <button id="chat-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
+    </div>
+</div>
+
+<!-- Unsplash Dynamic Photography Attribution -->
+<div id="photo-attribution" class="photo-attribution glass">
+    <i class="fa-solid fa-camera"></i> Background via <a id="unsplash-link" href="https://unsplash.com/?utm_source=ClimaSense&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>
 </div>
 
 {% endblock %}
