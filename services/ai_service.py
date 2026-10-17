@@ -100,13 +100,22 @@ def sanitize_user_input(text):
         text = re.sub(p, '[redacted]', text)
     return text
 
+def is_valid_gemini_key(key):
+    """Checks whether the key is configured and not a placeholder."""
+    if not key:
+        return False
+    k = str(key).strip().lower()
+    if k.startswith('your_') or 'placeholder' in k or 'your_gemini' in k or len(k) < 10:
+        return False
+    return True
+
 def _call_gemini_api(prompt, max_tokens=None):
     """
     Calls the Google Gemini REST API using server-side credentials.
     Returns (response_text, True) on success, or (error_msg, False) on failure.
     """
     api_key = current_app.config.get('AI_API_KEY')
-    if not api_key:
+    if not is_valid_gemini_key(api_key):
         return "Gemini API key is not configured.", False
         
     model = current_app.config.get('AI_MODEL', 'gemini-1.5-flash')
