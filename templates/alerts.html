@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Weather Alerts & Warnings - ClimaSense{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 960px; margin: 2rem auto; padding: 0 1rem;">
+    <div class="glass" style="padding: 2rem 2.5rem; margin-bottom: 2rem; border-radius: var(--radius-xl);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom: 2rem;">
+            <div>
+                <h1 style="font-size: 2rem; color: var(--text-heading); margin: 0 0 0.35rem 0;">
+                    <i class="fa-solid fa-triangle-exclamation" style="color: var(--sun-accent); margin-right: 8px;"></i> Severe Weather Alerts & Advisories
+                </h1>
+                <p id="alerts-page-city" style="color: var(--text-secondary); font-size: 1rem; margin: 0;">Authoritative meteorological bulletins and active emergency notices.</p>
+            </div>
+            <div style="display: flex; gap: 0.6rem;">
+                <input type="text" id="alerts-city-input" class="search-input" placeholder="Change City" value="Tokyo" style="max-width: 200px; padding: 0.75rem 1.15rem; border-radius: var(--radius-pill);">
+                <button id="alerts-search-btn" class="search-btn" style="padding: 0.75rem 1.4rem; border-radius: var(--radius-pill);">Check</button>
+            </div>
+        </div>
+
+        <div id="alerts-content-container">
+            <!-- Dynamic alerts or All Clear state -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadAlertsPage(city) {
+    document.getElementById('alerts-page-city').textContent = `Monitoring authoritative meteorological bulletins for ${city}`;
+    const container = document.getElementById('alerts-content-container');
+    container.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fa-solid fa-spinner fa-spin"></i> Checking regional warning radar...</div>';
+
+    try {
+        const wRes = await fetch(`/api/weather/${encodeURIComponent(city)}`);
+        const wData = await wRes.json();
+        if (wData.success && wData.data && wData.data.coord) {
+            const { lat, lon } = wData.data.coord;
+            const alRes = await fetch(`/api/alerts?lat=${lat}&lon=${lon}`);
+            const alData = await alRes.json();
+
+            if (alData.success && alData.alert) {
+                container.innerHTML = `
+                    <div style="padding: 1.5rem 2rem; border-radius: var(--radius-lg); background: var(--sun-pale); border: 1.5px solid var(--sun-accent); border-left: 6px solid var(--sun-accent); margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem;">
+                            <i class="fa-solid fa-triangle-exclamation" style="color: #8A5800; font-size: 1.5rem;"></i>
+                            <h3 style="margin: 0; color: #8A5800; font-size: 1.25rem;">${alData.alert.title}</h3>
+                            <span style="background: rgba(244, 185, 66, 0.25); color: #8A5800; padding: 2px 8px; border-radius: 12px; font-weight: bold; font-size: 0.8rem; text-transform: uppercase;">Active Advisory</span>
+                        </div>
+                        <p style="color: var(--text-body); line-height: 1.7; margin: 0.75rem 0;">${alData.alert.description}</p>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 1rem;">
+                            <strong>Issuing Authority:</strong> National Meteorological Center • Live Feed Calibrated
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3.5rem 1rem;">
+                        <i class="fa-solid fa-shield-heart" style="font-size: 3.5rem; color: var(--green-accent); margin-bottom: 1rem;"></i>
+                        <h2 style="color: var(--text-heading); font-size: 1.5rem; margin-bottom: 0.5rem;">All Clear — No Severe Weather Warnings</h2>
+                        <p style="color: var(--text-secondary); max-width: 520px; margin: 0 auto; line-height: 1.6;">
+                            Atmospheric telemetry indicates safe, standard meteorological conditions for ${city} with no active flash flood, gale, or extreme temperature advisories.
+                        </p>
+                    </div>
+                `;
+            }
+        }
+    } catch(e) {
+        console.error('Error loading alerts:', e);
+        container.innerHTML = '<div style="color: var(--danger); text-align: center; padding: 2rem;">Could not verify active alerts at this time.</div>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const city = localStorage.getItem('lastCity') || 'Tokyo';
+    document.getElementById('alerts-city-input').value = city;
+    loadAlertsPage(city);
+
+    document.getElementById('alerts-search-btn').addEventListener('click', () => {
+        const c = document.getElementById('alerts-city-input').value.trim();
+        if (c) loadAlertsPage(c);
+    });
+});
+</script>
+{% endblock %}

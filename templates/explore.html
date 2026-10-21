@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Explore Cities - ClimaSense{% endblock %}
+
+{% block extra_css %}
+<style>
+    .explore-header {
+        text-align: center;
+        padding: 2.5rem 1rem 1.5rem;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .explore-title {
+        font-size: 2.4rem;
+        font-weight: 800;
+        color: var(--text-heading);
+        margin-bottom: 0.5rem;
+    }
+
+    .filter-pills-row {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        margin: 1.5rem 0 2rem;
+    }
+
+    .filter-pill {
+        background: var(--surface-card);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-body);
+        padding: 0.5rem 1.25rem;
+        border-radius: var(--radius-pill);
+        font-weight: 600;
+        font-size: 0.92rem;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .filter-pill.active, .filter-pill:hover {
+        background: var(--blue-primary);
+        color: #FFFFFF;
+        border-color: var(--blue-primary);
+        box-shadow: 0 4px 12px rgba(49, 133, 214, 0.25);
+    }
+
+    .cities-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.75rem;
+        max-width: 1200px;
+        margin: 0 auto 3rem;
+        padding: 0 1rem;
+    }
+
+    .city-dest-card {
+        background: var(--surface-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-card);
+        transition: transform var(--transition-smooth), box-shadow var(--transition-smooth);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .city-dest-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-elevated);
+    }
+
+    .city-dest-image {
+        width: 100%;
+        height: 190px;
+        object-fit: cover;
+    }
+
+    .city-dest-body {
+        padding: 1.4rem;
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        justify-content: space-between;
+    }
+
+    .city-dest-name {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--text-heading);
+    }
+
+    .city-dest-meta {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--blue-primary);
+        text-transform: uppercase;
+        margin-top: 2px;
+    }
+
+    .city-dest-desc {
+        font-size: 0.92rem;
+        color: var(--text-body);
+        line-height: 1.55;
+        margin: 0.75rem 0 1.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="explore-header">
+    <h1 class="explore-title"><i class="fa-solid fa-earth-americas" style="color: var(--blue-primary); margin-right: 8px;"></i> Explore Global Destinations</h1>
+    <p style="color: var(--text-secondary); font-size: 1.05rem;">Discover live meteorological conditions, landmark photography, and municipal articles worldwide.</p>
+    
+    <div class="filter-pills-row">
+        <button class="filter-pill active" data-region="All">All Regions</button>
+        <button class="filter-pill" data-region="Asia">Asia</button>
+        <button class="filter-pill" data-region="Europe">Europe</button>
+        <button class="filter-pill" data-region="Americas">Americas</button>
+        <button class="filter-pill" data-region="Oceania">Oceania</button>
+    </div>
+</div>
+
+<div class="cities-grid" id="cities-grid">
+    {% for dest in destinations %}
+    <div class="city-dest-card" data-region="{{ dest.region }}">
+        <img src="{{ dest.img }}" alt="{{ dest.city }}" class="city-dest-image" loading="lazy">
+        <div class="city-dest-body">
+            <div>
+                <div class="city-dest-name">{{ dest.city }}</div>
+                <div class="city-dest-meta">{{ dest.country }} • {{ dest.region }}</div>
+                <p class="city-dest-desc">{{ dest.desc }}</p>
+            </div>
+            <a href="{{ url_for('weather.index', city=dest.city) }}" class="search-btn" style="text-decoration: none; justify-content: center; padding: 0.65rem 1.25rem; font-size: 0.92rem;">
+                <i class="fa-solid fa-cloud-sun"></i> View Weather
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const pills = document.querySelectorAll('.filter-pill');
+    const cards = document.querySelectorAll('.city-dest-card');
+
+    pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+            pills.forEach(p => p.classList.remove('active'));
+            pill.classList.add('active');
+            const region = pill.getAttribute('data-region');
+
+            cards.forEach(card => {
+                if (region === 'All' || card.getAttribute('data-region') === region) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

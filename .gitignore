@@ -1,19 +1,25 @@
 # Environments
 .env
 api.env
+*.env
 
-# Python
+# Python & testing
 __pycache__/
 *.py[cod]
 *$py.class
 venv/
 env/
 .venv/
+instance/
+.pytest_cache/
+.coverage
+htmlcov/
 
 # IDEs
 .vscode/
 .idea/
 
-# DB
+# DB & archives
 *.sqlite3
 *.db
+*.zip

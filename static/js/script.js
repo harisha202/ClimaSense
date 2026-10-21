@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/static/sw.js')
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
             .then(reg => console.log('Service Worker registered', reg))
             .catch(err => console.error('Service Worker registration failed', err));
     }
@@ -87,8 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     suggestionsRow.classList.add('hidden');
                 }
             }, 300);
-        });
-    }
         });
     }
 
@@ -212,8 +210,12 @@ async function fetchWeather(city) {
             window.fetchAlerts(lat, lon);
             window.updateTheme(desc);
             window.updateWeatherEffects(desc, icon);
+            if (window.Weather3D) {
+                window.Weather3D.updateScene(icon, data.data.weather[0].main, desc);
+            }
             window.renderInsights(data.data, window.currentRainProb);
             window.fetchBriefing(data.data.name);
+            window.fetchCityEncyclopedia(data.data.name);
             
             if(window.joinCityRoom) {
                 window.joinCityRoom(data.data.name);
@@ -468,10 +470,71 @@ window.renderWeather = (data, comfortScore, comfortLabel) => {
     document.getElementById('sunset-time').textContent = ss.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
     
     // Info
-    document.getElementById('info-country').textContent = data.sys.country;
+    const infoCountry = document.getElementById('info-country');
+    if (infoCountry) infoCountry.textContent = data.sys.country;
     let tzH = data.timezone / 3600;
-    document.getElementById('info-tz').textContent = `UTC ${tzH >= 0 ? '+' : ''}${tzH}`;
-    document.getElementById('info-coords').textContent = `${data.coord.lat.toFixed(2)}, ${data.coord.lon.toFixed(2)}`;
+    const infoTz = document.getElementById('info-tz');
+    if (infoTz) infoTz.textContent = `UTC ${tzH >= 0 ? '+' : ''}${tzH}`;
+    const infoCoords = document.getElementById('info-coords');
+    if (infoCoords) infoCoords.textContent = `${data.coord.lat.toFixed(2)}, ${data.coord.lon.toFixed(2)}`;
+
+    // Dynamic Hero Greeting & Badges matching Mockup
+    const hour = cityTime.getHours();
+    let greetingPrefix = "Good morning";
+    if (hour >= 12 && hour < 17) greetingPrefix = "Good afternoon";
+    else if (hour >= 17 && hour < 21) greetingPrefix = "Good evening";
+    else if (hour >= 21 || hour < 5) greetingPrefix = "Good night";
+    const heroGreeting = document.getElementById('hero-greeting');
+    if (heroGreeting) heroGreeting.textContent = `${greetingPrefix}, ${data.name} ${emoji}`;
+
+    const dateStr = cityTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = cityTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    const cityLocalTimeEl = document.getElementById('city-local-time');
+    if (cityLocalTimeEl) cityLocalTimeEl.textContent = `${dateStr} | ${timeStr}`;
+
+        // Dynamically update CSV export URLs for active city
+    const expCurrent = document.getElementById('export-current-weather-csv');
+    if (expCurrent) expCurrent.href = `/api/weather/${encodeURIComponent(data.name)}/export/csv`;
+    const expHourly = document.getElementById('export-hourly-forecast-csv');
+    if (expHourly) expHourly.href = `/api/forecast/${encodeURIComponent(data.name)}/export/hourly/csv`;
+    const expWeekly = document.getElementById('export-weekly-forecast-csv');
+    if (expWeekly) expWeekly.href = `/api/forecast/${encodeURIComponent(data.name)}/export/weekly/csv`;
+
+    const fcBadge = document.getElementById('fc-city-badge');
+    if (fcBadge) fcBadge.textContent = `📍 ${data.name}, ${data.sys.country}`;
+
+    // Quick Info Card
+    const qiCapital = document.getElementById('qi-capital');
+    if (qiCapital) qiCapital.textContent = data.name;
+    const qiCountry = document.getElementById('qi-country');
+    if (qiCountry) qiCountry.textContent = data.sys.country;
+    const qiTz = document.getElementById('qi-timezone');
+    if (qiTz) qiTz.textContent = `UTC ${tzH >= 0 ? '+' : ''}${tzH}`;
+
+    // Discover Card
+    const discoverTitle = document.getElementById('discover-city-title');
+    if (discoverTitle) discoverTitle.innerHTML = `<i class="fa-solid fa-book-open" style="color: var(--blue-primary);"></i> Discover ${data.name}`;
+
+    // Map Button binding
+    const mapBtn = document.getElementById('qi-view-map-btn');
+    if (mapBtn) {
+        mapBtn.onclick = () => {
+            const mapModal = document.getElementById('map-modal');
+            if (mapModal) {
+                mapModal.classList.remove('hidden');
+                if (window.leafletMap) {
+                    setTimeout(() => window.leafletMap.invalidateSize(), 200);
+                }
+            }
+        };
+    }
+    const closeMapModal = document.getElementById('close-map-modal');
+    if (closeMapModal) {
+        closeMapModal.onclick = () => {
+            const mapModal = document.getElementById('map-modal');
+            if (mapModal) mapModal.classList.add('hidden');
+        };
+    }
     
     // reset save button
     const saveBtn = document.getElementById('save-city-btn');
@@ -510,40 +573,115 @@ window.fetchForecast = async (city) => {
 
 window.renderForecast = (forecast) => {
     const container = document.getElementById('forecast-container');
+    if (!container) return;
     container.innerHTML = '';
     
-    forecast.forEach(day => {
-        const date = new Date(day.date).toLocaleDateString('en-GB', {weekday: 'short', day: 'numeric'});
-        const row = document.createElement('div');
-        row.className = 'forecast-row';
+    // Support either 5-column tile grid or row fallback
+    const days = (forecast || []).slice(0, 5);
+    days.forEach((day, idx) => {
+        const dObj = new Date(day.date);
+        const dayName = idx === 0 ? 'Today' : dObj.toLocaleDateString('en-US', {weekday: 'short'});
+        const dateStr = dObj.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
         const highStr = window.getTempString(day.max_temp !== undefined ? day.max_temp : day.temp);
         const lowStr = window.getTempString(day.min_temp !== undefined ? day.min_temp : day.temp);
-        row.innerHTML = `
-            <div class="forecast-row-day">${date}</div>
-            <img src="https://openweathermap.org/img/wn/${day.icon}.png" alt="icon">
-            <div class="forecast-row-desc">${day.description}</div>
-            <div class="forecast-temp-range">
-                <span class="temp-high">${highStr}</span> / <span class="temp-low">${lowStr}</span>
-            </div>
+        
+        const tile = document.createElement('div');
+        tile.className = 'forecast-day-tile';
+        tile.innerHTML = `
+            <div class="forecast-tile-day">${dayName}</div>
+            <div class="forecast-tile-date">${dateStr}</div>
+            <img src="https://openweathermap.org/img/wn/${day.icon}.png" alt="Weather icon" style="width: 38px; height: 38px;">
+            <div class="forecast-tile-temp">${highStr}</div>
+            <div class="forecast-tile-cond">${day.description}</div>
         `;
-        container.appendChild(row);
+        container.appendChild(tile);
     });
 };
 
 window.renderTimeline = (hourly) => {
     const container = document.getElementById('timeline-container');
-    container.innerHTML = '';
-    
-    hourly.forEach(item => {
-        const block = document.createElement('div');
-        block.className = 'timeline-item';
-        block.innerHTML = `
-            <div class="timeline-time">${item.time}</div>
-            <img src="https://openweathermap.org/img/wn/${item.icon}.png" alt="icon">
-            <div class="timeline-temp">${window.getTempString(item.temp)}</div>
-        `;
-        container.appendChild(block);
-    });
+    if (container) {
+        container.innerHTML = '';
+        hourly.forEach(item => {
+            const block = document.createElement('div');
+            block.className = 'timeline-item';
+            block.innerHTML = `
+                <div class="timeline-time">${item.time}</div>
+                <img src="https://openweathermap.org/img/wn/${item.icon}.png" alt="icon">
+                <div class="timeline-temp">${window.getTempString(item.temp)}</div>
+            `;
+            container.appendChild(block);
+        });
+    }
+
+    const canvas = document.getElementById('hourly-curve-canvas');
+    if (canvas && typeof Chart !== 'undefined') {
+        const isImperial = localStorage.getItem('tempUnit') === 'F' || localStorage.getItem('unit') === 'imperial';
+        const points = (hourly || []).slice(0, 8);
+        const labels = points.map(p => p.time || '');
+        const temps = points.map(p => {
+            let t = p.temp;
+            if (isImperial) {
+                t = Math.round((t * 9/5) + 32);
+            } else {
+                t = Math.round(t);
+            }
+            return t;
+        });
+
+        if (window.hourlyChartInstance) {
+            window.hourlyChartInstance.destroy();
+        }
+
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+        gradient.addColorStop(0, 'rgba(49, 133, 214, 0.28)');
+        gradient.addColorStop(1, 'rgba(49, 133, 214, 0.01)');
+
+        window.hourlyChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Temperature',
+                    data: temps,
+                    borderColor: '#3185D6',
+                    borderWidth: 2.5,
+                    backgroundColor: gradient,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#FFFFFF',
+                    pointBorderColor: '#3185D6',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${ctx.parsed.y}${isImperial ? '°F' : '°C'}`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10, family: 'Inter' }, color: '#64788B' }
+                    },
+                    y: {
+                        display: false,
+                        suggestedMin: Math.min(...temps) - 2,
+                        suggestedMax: Math.max(...temps) + 2
+                    }
+                }
+            }
+        });
+    }
 };
 
 window.fetchAQI = async (lat, lon) => {
@@ -583,48 +721,72 @@ window.fetchAlerts = async (lat, lon) => {
     } catch(e) { console.error(e); }
 };
 
-window.fetchBackground = async (city) => {
+window.fetchBackground = async (city, weatherDesc = '') => {
     if (!city) return;
     try {
-        const res = await fetch(`/api/background/${encodeURIComponent(city)}`);
+        const url = weatherDesc
+            ? `/api/background/${encodeURIComponent(city)}/${encodeURIComponent(weatherDesc)}`
+            : `/api/background/${encodeURIComponent(city)}`;
+        const res = await fetch(url);
         const data = await res.json();
         if(data.success && data.url) {
             const bgEl = document.getElementById('bg-image');
-            if (bgEl) {
-                const img = new Image();
-                img.onload = () => {
-                    bgEl.style.backgroundImage = `url('${data.url}')`;
-                };
-                img.src = data.url;
-            }
+            const heroPanorama = document.getElementById('hero-panorama');
+            const discoverThumb = document.getElementById('discover-city-thumb');
             
-            // Photographer and Unsplash attribution compliance
+            const img = new Image();
+            img.onload = () => {
+                if (bgEl) bgEl.style.backgroundImage = `url('${data.url}')`;
+                if (heroPanorama) heroPanorama.style.backgroundImage = `url('${data.url}')`;
+                if (discoverThumb) discoverThumb.src = data.url;
+            };
+            img.onerror = () => {
+                const fallbackUrl = "https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?auto=format&fit=crop&w=1600&q=80";
+                if (bgEl) bgEl.style.backgroundImage = `url('${fallbackUrl}')`;
+                if (heroPanorama) heroPanorama.style.backgroundImage = `url('${fallbackUrl}')`;
+            };
+            img.src = data.url;
+            
+            // Photographer and Unsplash attribution compliance using safe DOM nodes
             const attrEl = document.getElementById('photo-attribution');
             if (attrEl) {
-                const photoName = data.photographer_name || 'Unsplash Community';
-                const photoUrl = data.photographer_url || 'https://unsplash.com/?utm_source=ClimaSense&utm_medium=referral';
-                const source = data.source || 'Unsplash';
-                attrEl.innerHTML = `<i class="fa-solid fa-camera"></i> Photo by <a href="${photoUrl}" target="_blank" rel="noopener">${photoName}</a> on <a href="https://unsplash.com/?utm_source=ClimaSense&utm_medium=referral" target="_blank" rel="noopener">${source}</a>`;
+                attrEl.textContent = '';
+                const icon = document.createElement('i');
+                icon.className = 'fa-solid fa-camera';
+                icon.style.marginRight = '6px';
+
+                const spanBefore = document.createElement('span');
+                spanBefore.textContent = ' Photo by ';
+
+                const photoLink = document.createElement('a');
+                photoLink.href = data.photographer_url || 'https://unsplash.com/?utm_source=ClimaSense&utm_medium=referral';
+                photoLink.target = '_blank';
+                photoLink.rel = 'noopener noreferrer';
+                photoLink.textContent = data.photographer_name || 'Unsplash Community';
+
+                const spanMid = document.createElement('span');
+                spanMid.textContent = ' on ';
+
+                const unsplashLink = document.createElement('a');
+                unsplashLink.href = 'https://unsplash.com/?utm_source=ClimaSense&utm_medium=referral';
+                unsplashLink.target = '_blank';
+                unsplashLink.rel = 'noopener noreferrer';
+                unsplashLink.textContent = 'Unsplash';
+
+                attrEl.appendChild(icon);
+                attrEl.appendChild(spanBefore);
+                attrEl.appendChild(photoLink);
+                attrEl.appendChild(spanMid);
+                attrEl.appendChild(unsplashLink);
             }
         }
     } catch(e) { console.error('Error fetching background image:', e); }
 };
 
 window.updateTheme = (desc) => {
-    const body = document.body;
-    body.className = body.className.replace(/\btheme-[a-z]+\b/g, ''); // remove old
-    if(desc.includes('thunderstorm') || desc.includes('storm')) body.classList.add('theme-thunderstorm');
-    else if(desc.includes('rain') || desc.includes('drizzle')) body.classList.add('theme-rain');
-    else if(desc.includes('snow')) body.classList.add('theme-snow');
-    else if(desc.includes('fog') || desc.includes('mist')) body.classList.add('theme-fog');
-    else if(desc.includes('cloud')) body.classList.add('theme-cloudy');
-    else if(desc.includes('clear')) {
-        const h = new Date().getHours();
-        if(h > 18 || h < 6) body.classList.add('theme-night');
-        else body.classList.add('theme-sunny');
-    } else {
-        body.classList.add('theme-sunny');
-    }
+    // Strict Light Theme enforcement: zero dark mode classes
+    document.body.classList.remove('dark-theme');
+    document.body.classList.add('light-theme');
 };
 
 window.showToast = (message) => {
@@ -777,5 +939,87 @@ window.fetchSystemStatus = async () => {
     } catch(e) {
         console.error(e);
         grid.innerHTML = '<div style="grid-column: span 2; color: #ef4444;">Failed to load system status.</div>';
+    }
+};
+
+window.fetchCityEncyclopedia = async (city) => {
+    const encWrapper = document.getElementById('encyclopedia-wrapper');
+    const encTitle = document.getElementById('encyclopedia-city-title');
+    const encLead = document.getElementById('encyclopedia-lead-paragraph');
+    const tocList = document.getElementById('toc-list');
+    const articleBody = document.getElementById('encyclopedia-article-body');
+    const badgeWordCount = document.getElementById('badge-word-count');
+    const badgeReadingTime = document.getElementById('badge-reading-time');
+
+    if (!encWrapper || !encTitle || !articleBody) return;
+
+    try {
+        const res = await fetch(`/api/encyclopedia/${encodeURIComponent(city)}`);
+        const data = await res.json();
+        if (data.success && data.article) {
+            const article = data.article;
+            encTitle.textContent = `${article.city} — Municipal & Meteorological Monograph`;
+            if (badgeWordCount) {
+                badgeWordCount.innerHTML = `<i class="fa-solid fa-file-lines"></i> <strong>${article.total_word_count.toLocaleString()} Words</strong>`;
+            }
+            if (badgeReadingTime) {
+                badgeReadingTime.innerHTML = `<i class="fa-solid fa-clock"></i> <strong>${article.reading_time_minutes} min read</strong>`;
+            }
+            if (encLead) {
+                encLead.textContent = article.summary || '';
+            }
+
+            // Table of Contents
+            if (tocList) {
+                tocList.innerHTML = '';
+                article.sections.forEach((sec, idx) => {
+                    const li = document.createElement('li');
+                    const link = document.createElement('a');
+                    link.className = 'toc-link';
+                    link.href = `#encyclopedia-sec-${idx}`;
+                    link.innerHTML = `<i class="fa-solid fa-angle-right" style="font-size:0.75rem; margin-right:4px;"></i> ${sec.title}`;
+                    link.onclick = (e) => {
+                        e.preventDefault();
+                        const target = document.getElementById(`encyclopedia-sec-${idx}`);
+                        if (target) {
+                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            document.querySelectorAll('.toc-link').forEach(l => l.classList.remove('active'));
+                            link.classList.add('active');
+                        }
+                    };
+                    li.appendChild(link);
+                    tocList.appendChild(li);
+                });
+            }
+
+            // Monograph Sections
+            articleBody.innerHTML = '';
+            article.sections.forEach((sec, idx) => {
+                const secEl = document.createElement('section');
+                secEl.id = `encyclopedia-sec-${idx}`;
+                secEl.className = 'encyclopedia-section';
+
+                const h2 = document.createElement('h2');
+                h2.innerHTML = `${sec.title} <span class="encyclopedia-citation">[Ref: City Archive ${idx + 1}]</span>`;
+                secEl.appendChild(h2);
+
+                if (sec.content) {
+                    const paragraphs = sec.content.split('\n\n');
+                    paragraphs.forEach(pText => {
+                        if (pText.trim()) {
+                            const p = document.createElement('p');
+                            p.textContent = pText.trim();
+                            secEl.appendChild(p);
+                        }
+                    });
+                }
+
+                articleBody.appendChild(secEl);
+            });
+
+            encWrapper.classList.remove('hidden');
+        }
+    } catch (e) {
+        console.error('Error fetching city encyclopedia:', e);
     }
 };

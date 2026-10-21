@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Help & FAQ - ClimaSense{% endblock %}
+
+{% block extra_css %}
+<style>
+    .help-container {
+        max-width: 860px;
+        margin: 2.5rem auto;
+        padding: 0 1rem;
+    }
+
+    .help-card {
+        background: var(--surface-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-card);
+        padding: 2.5rem;
+    }
+
+    .faq-item {
+        border-bottom: 1px solid var(--border-subtle);
+        padding: 1.25rem 0;
+    }
+
+    .faq-question {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--text-heading);
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .faq-answer {
+        margin-top: 0.75rem;
+        color: var(--text-body);
+        line-height: 1.7;
+        font-size: 0.98rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="help-container">
+    <div class="help-card glass">
+        <h1 style="font-size: 2.2rem; color: var(--text-heading); margin-bottom: 0.5rem;">
+            <i class="fa-solid fa-circle-question" style="color: var(--blue-primary); margin-right: 8px;"></i> ClimaSense Help Center
+        </h1>
+        <p style="color: var(--text-secondary); font-size: 1.05rem; margin-bottom: 2rem;">
+            Frequently asked questions, meteorological definitions, and troubleshooting assistance.
+        </p>
+
+        <div class="faq-item">
+            <div class="faq-question">
+                <span>How does ClimaSense determine the Comfort Score?</span>
+                <i class="fa-solid fa-chevron-down" style="color: var(--blue-primary);"></i>
+            </div>
+            <div class="faq-answer">
+                The Comfort Score (0-100) is synthesized from ambient temperature (calibrated to the 18°C-26°C human thermal neutrality band), relative humidity (optimal between 35%-65%), wind velocity, and local air quality index. Scores of 85+ reflect optimal outdoor recreation conditions.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">
+                <span>Where does the scenic background photography originate?</span>
+                <i class="fa-solid fa-chevron-down" style="color: var(--blue-primary);"></i>
+            </div>
+            <div class="faq-answer">
+                Dynamic city scenery is fetched exclusively via Unsplash's verified photographic catalog. When searches are performed, our backend matches the city alongside the current atmospheric condition, respecting attribution guidelines and caching responses for rapid loading.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">
+                <span>How are the 4,000+ word City Encyclopedia articles compiled?</span>
+                <i class="fa-solid fa-chevron-down" style="color: var(--blue-primary);"></i>
+            </div>
+            <div class="faq-answer">
+                Articles are generated through a 38-section municipal monograph architecture that pulls authentic geographical coordinates, census demographics, historical milestones, and climate records from authoritative open repositories, computing verified word counts directly on the backend.
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="faq-question">
+                <span>What happens if an API key expires or is throttled?</span>
+                <i class="fa-solid fa-chevron-down" style="color: var(--blue-primary);"></i>
+            </div>
+            <div class="faq-answer">
+                ClimaSense features multi-tiered fallback engineering. If OpenWeather or Gemini rate limits are reached, the system smoothly transitions to cached municipal records and grounded deterministic rules without crashing or displaying raw stack traces.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.faq-question').forEach(q => {
+    q.addEventListener('click', () => {
+        const ans = q.nextElementSibling;
+        const icon = q.querySelector('i');
+        if (ans.style.display === 'none') {
+            ans.style.display = 'block';
+            icon.className = 'fa-solid fa-chevron-up';
+        } else {
+            ans.style.display = 'none';
+            icon.className = 'fa-solid fa-chevron-down';
+        }
+    });
+});
+</script>
+{% endblock %}

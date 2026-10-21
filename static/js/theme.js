@@ -1,37 +1,24 @@
+// ClimaSense - Light Theme & Unit Preferences
+// Strict Light Mode Policy: Pure light theme across entire application
 document.addEventListener('DOMContentLoaded', () => {
+    // Enforce light theme globally
+    localStorage.setItem('theme', 'light');
+    document.body.classList.remove('dark-theme');
+    document.body.classList.add('light-theme');
+    
+    // Hide theme toggle button if present since app is permanently light-themed
     const themeBtn = document.getElementById('theme-toggle');
-    const unitBtn = document.getElementById('unit-toggle');
-    
-    // Theme logic
-    const currentTheme = localStorage.getItem('theme') || 'dark';
-    if (currentTheme === 'light') {
-        document.body.classList.replace('dark-theme', 'light-theme');
-        if(themeBtn) themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
-    } else {
-        document.body.classList.replace('light-theme', 'dark-theme');
-        if(themeBtn) themeBtn.innerHTML = '<i class="fa-solid fa-moon"></i>';
-    }
-    
     if (themeBtn) {
-        themeBtn.addEventListener('click', () => {
-            if (document.body.classList.contains('dark-theme')) {
-                document.body.classList.replace('dark-theme', 'light-theme');
-                localStorage.setItem('theme', 'light');
-                themeBtn.innerHTML = '<i class="fa-solid fa-sun"></i>';
-            } else {
-                document.body.classList.replace('light-theme', 'dark-theme');
-                localStorage.setItem('theme', 'dark');
-                themeBtn.innerHTML = '<i class="fa-solid fa-moon"></i>';
-            }
-        });
+        themeBtn.style.display = 'none';
     }
 
-    // Unit toggle logic
+    // Unit toggle logic (°C / °F)
+    const unitBtn = document.getElementById('unit-toggle');
     let isMetric = localStorage.getItem('unit') !== 'imperial';
     
     const updateUnitBtnText = () => {
-        if(unitBtn) unitBtn.textContent = isMetric ? '°C' : '°F';
-    }
+        if (unitBtn) unitBtn.textContent = isMetric ? '°C' : '°F';
+    };
     updateUnitBtnText();
     
     if (unitBtn) {
@@ -44,14 +31,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Helper function for converting temp based on preference
+    // Global helper function for converting temp based on preference
     window.getTempString = (tempCelsius) => {
         const metric = localStorage.getItem('unit') !== 'imperial';
         if (metric) {
-            return Math.round(tempCelsius) + '°C';
+            return `${Math.round(tempCelsius)}°C`;
         } else {
             const fahrenheit = (tempCelsius * 9/5) + 32;
-            return Math.round(fahrenheit) + '°F';
+            return `${Math.round(fahrenheit)}°F`;
         }
     };
 });

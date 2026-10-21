@@ -1,93 +1,438 @@
 {% extends "base.html" %}
 
-{% block title %}Log In - ClimaSense{% endblock %}
+{% block title %}Sign In - ClimaSense Weather & Discovery{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* Night / Clear Theme - 3D */
-    .layer-back {
-        background: linear-gradient(to bottom, #0a192f, #020c1b);
+    .login-container-wrapper {
+        min-height: calc(100vh - 140px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2.5rem 1rem;
     }
-    .layer-mid {
-        background: radial-gradient(circle at 50% 50%, rgba(100,255,218,0.05), transparent 70%);
-        animation: slowDrift 20s infinite alternate ease-in-out;
-    }
-    
-    .orb-star {
-        background: rgba(100, 255, 218, 0.8);
-        box-shadow: 0 0 20px rgba(100,255,218,0.6);
-        animation: floatOrb 10s infinite alternate ease-in-out;
-    }
-    .orb-star-1 { width: 10px; height: 10px; top: 20%; left: 30%; transform: translateZ(-200px); }
-    .orb-star-2 { width: 15px; height: 15px; top: 60%; left: 70%; transform: translateZ(-150px); animation-delay: -2s; }
-    .orb-star-3 { width: 8px; height: 8px; top: 40%; left: 80%; transform: translateZ(-250px); animation-delay: -5s; }
-    
-    @keyframes slowDrift {
-        0% { transform: translateZ(-300px) scale(1.2) translateX(-2%); }
-        100% { transform: translateZ(-300px) scale(1.2) translateX(2%); }
-    }
-    @keyframes floatOrb {
-        0% { transform: translateY(0) rotate3d(1, 1, 0, 0deg); }
-        100% { transform: translateY(-50px) rotate3d(1, 1, 0, 180deg); }
-    }
-    
-    .auth-card {
-        transform-style: preserve-3d;
-        background: linear-gradient(145deg, rgba(10, 25, 47, 0.9), rgba(2, 12, 27, 0.9));
-        border: 1px solid rgba(100, 255, 218, 0.2);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-        padding: 2rem;
-        border-radius: 15px;
+
+    .login-split-card {
+        display: grid;
+        grid-template-columns: 1.15fr 1fr;
+        max-width: 980px;
         width: 100%;
-        max-width: 400px;
-        transition: transform 0.1s; /* smooth mouse tracking */
+        background: var(--surface-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-xl);
+        box-shadow: 0 16px 40px rgba(32, 54, 75, 0.08);
+        overflow: hidden;
     }
-    
+
+    /* Left Decorative Feature Panel */
+    .login-feature-pane {
+        position: relative;
+        padding: 3rem 2.5rem;
+        background: linear-gradient(135deg, rgba(230, 244, 255, 0.94) 0%, rgba(240, 248, 255, 0.98) 100%),
+                    url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80') center/cover no-repeat;
+        border-right: 1px solid var(--border-subtle);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .login-brand-header {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .login-brand-logo {
+        font-size: 2.4rem;
+        color: var(--blue-primary);
+        filter: drop-shadow(0 2px 8px rgba(49, 133, 214, 0.25));
+    }
+
+    .login-brand-name {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: var(--text-heading);
+        line-height: 1.1;
+    }
+
+    .login-brand-tagline {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--blue-primary);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .login-features-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1.1rem;
+    }
+
+    .login-feature-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+    }
+
+    .login-feature-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #FFFFFF;
+        box-shadow: 0 2px 6px rgba(49, 133, 214, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+    }
+
+    .login-feature-title {
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin-bottom: 2px;
+    }
+
+    .login-feature-desc {
+        font-size: 0.82rem;
+        color: var(--text-body);
+        line-height: 1.4;
+    }
+
+    .login-feature-footer {
+        margin-top: 2rem;
+        padding-top: 1.25rem;
+        border-top: 1px solid rgba(49, 133, 214, 0.15);
+        font-size: 0.82rem;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    /* Right Form Pane */
+    .login-form-pane {
+        padding: 3rem 2.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        background: var(--surface-card);
+    }
+
+    .login-form-title {
+        font-size: 1.85rem;
+        font-weight: 800;
+        color: var(--text-heading);
+        margin-bottom: 0.4rem;
+    }
+
+    .login-form-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.92rem;
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin-bottom: 0.45rem;
+    }
+
+    .form-input-wrapper {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
     .form-input {
-        background: rgba(2, 12, 27, 0.7);
-        color: #e6f1ff;
-        border: 1px solid rgba(100, 255, 218, 0.3);
+        width: 100%;
+        padding: 0.85rem 1.15rem;
+        border-radius: var(--radius-pill);
+        border: 1.5px solid var(--border-subtle);
+        background: var(--surface-input);
+        color: var(--text-heading);
+        font-size: 0.96rem;
+        outline: none;
+        transition: all var(--transition-fast);
     }
-    .form-input:focus { border-color: #64ffda; outline: none; }
-    .auth-btn { background: #64ffda; color: #020c1b; }
+
+    .form-input:focus {
+        border-color: var(--border-focus);
+        box-shadow: 0 0 0 3px var(--blue-pale);
+    }
+
+    .pw-toggle-btn {
+        position: absolute;
+        right: 12px;
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 0.95rem;
+        padding: 6px;
+    }
+
+    .pw-toggle-btn:hover {
+        color: var(--blue-primary);
+    }
+
+    .auth-submit-btn {
+        width: 100%;
+        padding: 0.88rem;
+        background: var(--blue-primary);
+        color: #FFFFFF;
+        font-weight: 700;
+        font-size: 1rem;
+        border: none;
+        border-radius: var(--radius-pill);
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(49, 133, 214, 0.3);
+        transition: all var(--transition-fast);
+        margin-top: 0.75rem;
+    }
+
+    .auth-submit-btn:hover {
+        background: var(--blue-deep);
+        transform: translateY(-2px);
+    }
+
+    .demo-login-btn {
+        width: 100%;
+        padding: 0.8rem;
+        background: var(--blue-pale);
+        color: var(--blue-deep);
+        border: 1px solid var(--blue-soft);
+        font-weight: 700;
+        font-size: 0.92rem;
+        border-radius: var(--radius-pill);
+        cursor: pointer;
+        transition: all var(--transition-fast);
+        margin-top: 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+
+    .demo-login-btn:hover {
+        background: var(--blue-soft);
+        color: var(--blue-primary);
+    }
+
+    .auth-links-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1.5rem;
+        font-size: 0.88rem;
+    }
+
+    .auth-link {
+        color: var(--blue-primary);
+        text-decoration: none;
+        font-weight: 600;
+        transition: color var(--transition-fast);
+    }
+
+    .auth-link:hover {
+        color: var(--blue-deep);
+        text-decoration: underline;
+    }
+
+    .auth-error-banner {
+        background: #FEE2E2;
+        color: #991B1B;
+        border: 1px solid #FCA5A5;
+        border-radius: var(--radius-md);
+        padding: 0.75rem 1rem;
+        font-size: 0.88rem;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    @media (max-width: 860px) {
+        .login-split-card {
+            grid-template-columns: 1fr;
+        }
+        .login-feature-pane {
+            padding: 2rem 1.5rem;
+            border-right: none;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+        .login-form-pane {
+            padding: 2.25rem 1.5rem;
+        }
+    }
 </style>
 {% endblock %}
 
-{% block scene_orbs %}
-<div class="orb orb-star orb-star-1"></div>
-<div class="orb orb-star orb-star-2"></div>
-<div class="orb orb-star orb-star-3"></div>
-{% endblock %}
-
 {% block content %}
-<div class="auth-page">
-    <div class="auth-card glass">
-        <h2 class="auth-title">Welcome Back</h2>
-        <form id="login-form">
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" class="form-input" required>
+<div class="login-container-wrapper">
+    <div class="login-split-card">
+        <!-- Left Decorative Feature Explainer Pane -->
+        <div class="login-feature-pane">
+            <div>
+                <div class="login-brand-header">
+                    <i class="fa-solid fa-cloud-sun login-brand-logo"></i>
+                    <div>
+                        <div class="login-brand-name">ClimaSense</div>
+                        <div class="login-brand-tagline">Weather • Explore • Discover</div>
+                    </div>
+                </div>
+
+                <ul class="login-features-list">
+                    <li class="login-feature-item">
+                        <div class="login-feature-icon" style="color: var(--sun-accent);">☀️</div>
+                        <div>
+                            <div class="login-feature-title">Check Current Weather</div>
+                            <div class="login-feature-desc">Real-time observed temperature, humidity, wind, and atmospheric pressure.</div>
+                        </div>
+                    </li>
+                    <li class="login-feature-item">
+                        <div class="login-feature-icon" style="color: var(--blue-primary);">🌍</div>
+                        <div>
+                            <div class="login-feature-title">Explore Global Cities</div>
+                            <div class="login-feature-desc">Discover worldwide destinations with dynamic Unsplash city photography.</div>
+                        </div>
+                    </li>
+                    <li class="login-feature-item">
+                        <div class="login-feature-icon" style="color: var(--blue-secondary);">⏱️</div>
+                        <div>
+                            <div class="login-feature-title">Hourly & Weekly Forecasts</div>
+                            <div class="login-feature-desc">24-hour interactive spline curve charts and 7-day extended outlooks.</div>
+                        </div>
+                    </li>
+                    <li class="login-feature-item">
+                        <div class="login-feature-icon" style="color: var(--blue-deep);">⚖️</div>
+                        <div>
+                            <div class="login-feature-title">Compare City Weather</div>
+                            <div class="login-feature-desc">Side-by-side meteorological comparisons and thermal comfort scores.</div>
+                        </div>
+                    </li>
+                    <li class="login-feature-item">
+                        <div class="login-feature-icon" style="color: var(--green-accent);">🍃</div>
+                        <div>
+                            <div class="login-feature-title">Air Quality & UV Health</div>
+                            <div class="login-feature-desc">Multi-pollutant analysis (PM2.5, PM10) and UV index risk categories.</div>
+                        </div>
+                    </li>
+                    <li class="login-feature-item">
+                        <div class="login-feature-icon" style="color: #6366F1;">📖</div>
+                        <div>
+                            <div class="login-feature-title">City Encyclopedia</div>
+                            <div class="login-feature-desc">Comprehensive municipal monographs with geography, history, and climate.</div>
+                        </div>
+                    </li>
+                    <li class="login-feature-item">
+                        <div class="login-feature-icon" style="color: var(--lavender-accent);">🤖</div>
+                        <div>
+                            <div class="login-feature-title">Gemini AI Assistance</div>
+                            <div class="login-feature-desc">Grounded meteorological interpretations and conversational weather insights.</div>
+                        </div>
+                    </li>
+                </ul>
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" class="form-input" required>
+
+            <div class="login-feature-footer">
+                <i class="fa-solid fa-shield-halved" style="color: var(--blue-primary);"></i>
+                <span>Strict Light-Only Interface • API Keys Protected Server-Side</span>
             </div>
-            <div id="login-error" class="error-msg text-danger hidden mt-2"></div>
-            <button type="submit" class="auth-btn mt-4">Log In</button>
-        </form>
-        <a href="{{ url_for('auth.signup') }}" class="auth-btn-secondary">Don't have an account? Sign up</a>
+        </div>
+
+        <!-- Right Login Form Pane -->
+        <div class="login-form-pane">
+            <h1 class="login-form-title">Sign In</h1>
+            <p class="login-form-subtitle">Welcome back! Please enter your details to access ClimaSense.</p>
+
+            <div id="login-error" class="auth-error-banner hidden" role="alert">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span id="login-error-text">Invalid credentials. Please try again.</span>
+            </div>
+
+            <form id="login-form" novalidate>
+                <div class="form-group">
+                    <label for="username" class="form-label">Username or Email</label>
+                    <div class="form-input-wrapper">
+                        <input type="text" id="username" class="form-input" placeholder="e.g. admin or your username" required autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+                        <label for="password" class="form-label" style="margin-bottom: 0;">Password</label>
+                        <a href="{{ url_for('auth.forgot_password') }}" class="auth-link" style="font-size: 0.82rem;">Forgot password?</a>
+                    </div>
+                    <div class="form-input-wrapper">
+                        <input type="password" id="password" class="form-input" placeholder="Enter your password" required autocomplete="current-password">
+                        <button type="button" id="toggle-pw-btn" class="pw-toggle-btn" title="Toggle password visibility">
+                            <i class="fa-regular fa-eye" id="toggle-pw-icon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" id="submit-login-btn" class="auth-submit-btn">
+                    <i class="fa-solid fa-right-to-bracket" style="margin-right: 6px;"></i> Sign In
+                </button>
+            </form>
+
+            <button type="button" id="demo-login-btn" class="demo-login-btn">
+                <i class="fa-solid fa-bolt" style="color: var(--sun-accent);"></i> One-Click Instant Demo Login
+            </button>
+
+            <div class="auth-links-row">
+                <span style="color: var(--text-secondary);">Don't have an account?</span>
+                <a href="{{ url_for('auth.signup') }}" class="auth-link">Create Account &rarr;</a>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+// Toggle Password Visibility
+const togglePwBtn = document.getElementById('toggle-pw-btn');
+const pwInput = document.getElementById('password');
+const pwIcon = document.getElementById('toggle-pw-icon');
+
+if (togglePwBtn && pwInput && pwIcon) {
+    togglePwBtn.addEventListener('click', () => {
+        const isPassword = pwInput.getAttribute('type') === 'password';
+        pwInput.setAttribute('type', isPassword ? 'text' : 'password');
+        pwIcon.className = isPassword ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+    });
+}
+
+// Handle Form Submission
 document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const u = document.getElementById('username').value;
+    const u = document.getElementById('username').value.trim();
     const p = document.getElementById('password').value;
-    const err = document.getElementById('login-error');
-    err.classList.add('hidden');
+    const errBox = document.getElementById('login-error');
+    const errText = document.getElementById('login-error-text');
+    
+    if (!u || !p) {
+        errText.textContent = 'Please enter both your username and password.';
+        errBox.classList.remove('hidden');
+        return;
+    }
+    
+    errBox.classList.add('hidden');
     
     try {
         const res = await fetch('/login', {
@@ -97,14 +442,28 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         });
         const data = await res.json();
         if (data.success) {
-            window.location.href = '/index';
+            window.location.href = data.redirect || '/index';
         } else {
-            err.textContent = data.message || 'Login failed';
-            err.classList.remove('hidden');
+            errText.textContent = data.message || 'Login failed. Please check your credentials.';
+            errBox.classList.remove('hidden');
+        }
+    } catch(err) {
+        console.error('Login error:', err);
+        errText.textContent = 'Network error connecting to the server. Please try again.';
+        errBox.classList.remove('hidden');
+    }
+});
+
+// Demo Login
+document.getElementById('demo-login-btn').addEventListener('click', async () => {
+    try {
+        const res = await fetch('/login/demo', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            window.location.href = data.redirect || '/index';
         }
     } catch(e) {
-        err.textContent = 'Server error';
-        err.classList.remove('hidden');
+        console.error('Demo login error', e);
     }
 });
 </script>

@@ -1,55 +1,69 @@
 {% extends "base.html" %}
 
-{% block title %}Trends - ClimaSense{% endblock %}
+{% block title %}Historical Trends - ClimaSense{% endblock %}
 
 {% block extra_css %}
 <style>
     .chart-container {
-        background: rgba(0,0,0,0.3);
-        border-radius: var(--border-radius-md);
-        padding: 10px;
-        box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
-        border: 1px solid rgba(255,255,255,0.1);
+        background: var(--surface-card);
+        border-radius: var(--radius-lg);
+        padding: 1.25rem;
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--shadow-subtle);
     }
     
-    .form-input {
-        background: rgba(0,0,0,0.4);
-        border: 1px solid rgba(255,255,255,0.2);
-        color: #fff;
+    .tab-btn {
+        background: none;
+        border: none;
+        padding: 0.5rem 1rem;
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--text-secondary);
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all var(--transition-fast);
+    }
+    
+    .tab-btn.active, .tab-btn:hover {
+        color: var(--blue-primary);
+        border-bottom-color: var(--blue-primary);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div style="max-width:1000px; margin: 0 auto; padding: 2rem;">
-    <div class="trends-header glass" style="padding: 2rem; margin-bottom: 2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
-        <h2>Historical Trends</h2>
+<div style="max-width:1050px; margin: 0 auto; padding: 2rem 1rem;">
+    <div class="trends-header glass" style="padding: 2rem 2.5rem; margin-bottom: 2rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1.25rem; border-radius: var(--radius-xl);">
+        <div>
+            <h2 style="color: var(--text-heading); font-size: 1.85rem; margin: 0;">Historical Station Trends</h2>
+            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 0.35rem;">Track multi-day variance across atmospheric metrics.</p>
+        </div>
         
-        <div style="display:flex; gap:1rem; align-items:center;">
-            <input type="text" id="trend-city" class="search-input" placeholder="Primary City (e.g. London)" value="London">
-            <span style="color: rgba(255,255,255,0.5);">vs</span>
-            <input type="text" id="compare-city" class="search-input" placeholder="Compare City (Optional)">
-            <select id="trend-range" class="search-input" style="width:auto;">
+        <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap: wrap;">
+            <input type="text" id="trend-city" class="search-input" placeholder="Primary City" value="London" style="max-width:180px; padding: 0.75rem 1.15rem; border-radius: var(--radius-pill);">
+            <span style="color: var(--text-secondary); font-weight: 600;">vs</span>
+            <input type="text" id="compare-city" class="search-input" placeholder="Compare City" style="max-width:180px; padding: 0.75rem 1.15rem; border-radius: var(--radius-pill);">
+            <select id="trend-range" class="search-input" style="width:auto; padding: 0.75rem 1rem; border-radius: var(--radius-pill);">
                 <option value="7d">Last 7 Days</option>
                 <option value="30d">Last 30 Days</option>
             </select>
-            <button id="load-trend-btn" class="search-btn">Load</button>
+            <button id="load-trend-btn" class="search-btn" style="padding: 0.75rem 1.5rem; border-radius: var(--radius-pill);">Load</button>
         </div>
     </div>
     
-    <div class="glass" style="padding: 2rem;">
-        <div class="chart-tabs" style="display:flex; gap:1rem; border-bottom:1px solid rgba(255,255,255,0.1); margin-bottom:1rem; padding-bottom:0.5rem;">
-            <button class="theme-toggle-btn active" data-metric="temperature" style="border-bottom: 2px solid var(--accent);">Temperature</button>
-            <button class="theme-toggle-btn" data-metric="humidity">Humidity</button>
-            <button class="theme-toggle-btn" data-metric="wind_speed">Wind Speed</button>
-            <button class="theme-toggle-btn" data-metric="pressure">Pressure</button>
+    <div class="glass" style="padding: 2rem; border-radius: var(--radius-xl);">
+        <div class="chart-tabs" style="display:flex; gap:0.75rem; border-bottom:1px solid var(--border-subtle); margin-bottom:1.5rem; padding-bottom:0.25rem;">
+            <button class="tab-btn active" data-metric="temperature">Temperature</button>
+            <button class="tab-btn" data-metric="humidity">Humidity</button>
+            <button class="tab-btn" data-metric="wind_speed">Wind Speed</button>
+            <button class="tab-btn" data-metric="pressure">Pressure</button>
         </div>
         
-        <div class="chart-container" style="position: relative; height:400px; width:100%">
+        <div class="chart-container" style="position: relative; height:420px; width:100%">
             <canvas id="trend-canvas"></canvas>
             <div id="trend-empty-state" class="hidden" style="position: absolute; top:50%; left:50%; transform:translate(-50%, -50%); text-align:center;">
-                <i class="fa-solid fa-chart-line fa-3x" style="color:var(--text-secondary); margin-bottom:1rem;"></i>
-                <h3 style="color:var(--text-secondary);">Not enough data. We are tracking this city now!</h3>
+                <i class="fa-solid fa-chart-line fa-3x" style="color:var(--text-disabled); margin-bottom:1rem;"></i>
+                <h3 style="color:var(--text-secondary); font-size: 1.2rem;">Not enough historical snapshots. Data logging active!</h3>
             </div>
         </div>
     </div>

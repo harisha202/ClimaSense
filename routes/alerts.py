@@ -14,14 +14,21 @@ def api_alerts():
         
     data = get_alerts(lat, lon)
     if data and 'alerts' in data and len(data['alerts']) > 0:
-        alert = data['alerts'][0]
+        formatted_alerts = []
+        for a in data['alerts']:
+            formatted_alerts.append({
+                'title': a.get('event', 'Weather Alert'),
+                'description': a.get('description', ''),
+                'start': a.get('start'),
+                'end': a.get('end'),
+                'sender': a.get('sender_name', 'Meteorological Authority'),
+                'is_inferred': a.get('inferred', False)
+            })
+
         return jsonify({
-            'success': True, 
-            'alert': {
-                'title': alert.get('event', 'Weather Alert'),
-                'description': alert.get('description', ''),
-                'start': alert.get('start'),
-                'end': alert.get('end')
-            }
+            'success': True,
+            'alert': formatted_alerts[0], # Backwards compatibility
+            'alerts': formatted_alerts,
+            'count': len(formatted_alerts)
         })
-    return jsonify({'success': True, 'alert': None})
+    return jsonify({'success': True, 'alert': None, 'alerts': [], 'count': 0})

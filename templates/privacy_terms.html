@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy & Terms of Service - ClimaSense{% endblock %}
+
+{% block extra_css %}
+<style>
+    .legal-container {
+        max-width: 860px;
+        margin: 2.5rem auto;
+        padding: 0 1rem;
+    }
+
+    .legal-card {
+        background: var(--surface-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-card);
+        padding: 2.5rem;
+    }
+
+    .legal-tabs {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        border-bottom: 1px solid var(--border-subtle);
+        padding-bottom: 0.5rem;
+    }
+
+    .legal-tab {
+        padding: 0.5rem 1.25rem;
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: var(--text-secondary);
+        text-decoration: none;
+        border-bottom: 3px solid transparent;
+        transition: all var(--transition-fast);
+    }
+
+    .legal-tab.active {
+        color: var(--blue-primary);
+        border-bottom-color: var(--blue-primary);
+    }
+
+    .legal-content h2 {
+        font-size: 1.4rem;
+        color: var(--text-heading);
+        margin: 1.5rem 0 0.75rem;
+    }
+
+    .legal-content p {
+        color: var(--text-body);
+        line-height: 1.75;
+        margin-bottom: 1.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="legal-container">
+    <div class="legal-card glass">
+        <div class="legal-tabs">
+            <a href="{{ url_for('weather.privacy') }}" class="legal-tab {{ 'active' if section == 'privacy' else '' }}">
+                <i class="fa-solid fa-shield-halved"></i> Privacy Policy
+            </a>
+            <a href="{{ url_for('weather.terms') }}" class="legal-tab {{ 'active' if section == 'terms' else '' }}">
+                <i class="fa-solid fa-file-contract"></i> Terms of Service
+            </a>
+        </div>
+
+        <div class="legal-content">
+            {% if section == 'privacy' %}
+            <h1 style="color: var(--text-heading); font-size: 2rem; margin-bottom: 1rem;">ClimaSense Privacy Commitment</h1>
+            <p>Last updated: October 2026. ClimaSense is committed to responsible, transparent, and privacy-respecting meteorological intelligence.</p>
+            
+            <h2>1. Information We Collect</h2>
+            <p>We collect search queries, voluntary user accounts (username and hashed passwords), and optional browser geolocation coordinates requested solely to retrieve local weather data. We never sell, rent, or monetize your location history.</p>
+
+            <h2>2. Upstream Integrations & Data Security</h2>
+            <p>Weather data queries sent to OpenWeather and image queries sent to Unsplash are strictly anonymized on the backend. No personal identity tokens, cookies, or user credentials are transmitted to third-party photography or meteorological providers.</p>
+
+            <h2>3. Local Storage & Cookies</h2>
+            <p>Session cookies are used solely for authenticated user persistence. Client-side local storage records temperature and wind unit preferences without tracking across external domains.</p>
+            {% else %}
+            <h1 style="color: var(--text-heading); font-size: 2rem; margin-bottom: 1rem;">Terms of Service</h1>
+            <p>Effective Date: October 2026. By utilizing ClimaSense, you acknowledge and accept these operational conditions.</p>
+
+            <h2>1. Informational Nature of Meteorological Data</h2>
+            <p>Weather forecasts, air quality ratings, UV indices, and AI briefings are provided for general educational and planning purposes. ClimaSense is not an official governmental emergency warning broadcaster; in emergency situations, consult local civil defense authorities.</p>
+
+            <h2>2. Acceptable Use Policy</h2>
+            <p>Users agree not to execute automated scraping attacks, reverse-engineer proprietary algorithmic scoring, or overload server infrastructure with excessive concurrent requests exceeding established rate limits.</p>
+
+            <h2>3. Intellectual Property & Image Licensing</h2>
+            <p>Photographic backgrounds are licensed through the Unsplash Community License with full photographer attribution preserved. Monograph text synthesizes public municipal archives under fair educational attribution.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

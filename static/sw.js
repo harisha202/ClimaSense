@@ -1,18 +1,25 @@
-const CACHE_NAME = 'climasense-v2';
+const CACHE_NAME = 'climasense-v2.1';
 const ASSETS_TO_CACHE = [
   '/',
   '/static/css/style.css',
   '/static/js/script.js',
   '/static/manifest.json',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
-  'https://cdn.jsdelivr.net/npm/chart.js'
+  '/static/img/icon-192.png',
+  '/static/img/icon-512.png'
 ];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(ASSETS_TO_CACHE))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // Cache assets gracefully so single network misses don't abort installation
+      for (const asset of ASSETS_TO_CACHE) {
+        try {
+          await cache.add(asset);
+        } catch (e) {
+          console.warn('Failed to cache asset during SW install:', asset, e);
+        }
+      }
+    }).then(() => self.skipWaiting())
   );
 });
 
@@ -32,14 +39,14 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  // Bypass websockets, socket.io polling, and dynamic proxy endpoints
+  
+  // Bypass websockets, socket.io polling, and dynamic API endpoints
   if (event.request.url.includes('/socket.io/') || event.request.url.includes('/api/')) return;
   
-  // Try network first, fallback to cache for static assets
+  // Network first with cache fallback
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Cache successful requests dynamically
         if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -48,15 +55,16 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => {
-        // Fallback to cache if network fails (offline mode)
-        return caches.match(event.request).then((response) => {
-          if (response) return response;
-          // If no cache, and it's a navigation request, maybe return a generic offline page (not implemented here)
-          return new Response('You are offline. Please reconnect to the internet to view the latest weather data.', {
-              status: 503,
-              statusText: 'Service Unavailable'
-          });
+      .catch(async () => {
+        // Fallback to cache
+        const match = await caches.match(event.request);
+        if (match) return match;
+        
+        
+        
+        return new Response('You are offline. Please reconnect to access live meteorological data.', {
+          status: 503,
+          headers: { 'Content-Type': 'text/plain' }
         });
       })
   );

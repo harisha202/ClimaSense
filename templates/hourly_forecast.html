@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}24-Hour Hourly Forecast - ClimaSense{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1100px; margin: 2rem auto; padding: 0 1rem;">
+    <div class="glass" style="padding: 2rem 2.5rem; margin-bottom: 2rem; border-radius: var(--radius-xl);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+            <div>
+                <h1 style="font-size: 2rem; color: var(--text-heading); margin: 0 0 0.35rem 0;">
+                    <i class="fa-regular fa-clock" style="color: var(--blue-primary); margin-right: 8px;"></i> 24-Hour Hourly Weather Forecast
+                </h1>
+                <p id="hourly-page-city" style="color: var(--text-secondary); font-size: 1rem; margin: 0;">Observational hourly progression and thermal curves.</p>
+            </div>
+            <div style="display: flex; gap: 0.6rem;">
+                <input type="text" id="hourly-city-input" class="search-input" placeholder="Change City" value="Tokyo" style="max-width: 200px; padding: 0.75rem 1.15rem; border-radius: var(--radius-pill);">
+                <button id="hourly-search-btn" class="search-btn" style="padding: 0.75rem 1.4rem; border-radius: var(--radius-pill);">Update</button>
+            </div>
+        </div>
+
+        <div style="position: relative; height: 360px; width: 100%; margin: 2rem 0; background: var(--surface-alt); border-radius: var(--radius-lg); padding: 1.25rem; border: 1px solid var(--border-subtle);">
+            <canvas id="hourly-chart"></canvas>
+        </div>
+
+        <div id="hourly-cards-row" style="display: flex; gap: 1rem; overflow-x: auto; padding: 0.5rem 0.25rem;">
+            <!-- Injected via JavaScript -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let hourlyChart = null;
+
+async function loadHourly(city) {
+    document.getElementById('hourly-page-city').textContent = `Showing 24-hour meteorological timeline for ${city}`;
+    try {
+        const res = await fetch(`/api/forecast/${encodeURIComponent(city)}`);
+        const data = await res.json();
+        if (data.success && data.hourly) {
+            const labels = data.hourly.map(h => h.time);
+            const temps = data.hourly.map(h => h.temp);
+
+            const ctx = document.getElementById('hourly-chart').getContext('2d');
+            if (hourlyChart) hourlyChart.destroy();
+
+            hourlyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Hourly Temperature',
+                        data: temps,
+                        borderColor: '#3185D6',
+                        backgroundColor: 'rgba(98, 181, 245, 0.15)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 5,
+                        pointBackgroundColor: '#3185D6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { ticks: { color: '#64788B' }, grid: { color: 'rgba(221, 234, 243, 0.6)' } },
+                        x: { ticks: { color: '#20364B' }, grid: { color: 'transparent' } }
+                    }
+                }
+            });
+
+            const cardsRow = document.getElementById('hourly-cards-row');
+            cardsRow.innerHTML = '';
+            data.hourly.forEach(item => {
+                const card = document.createElement('div');
+                card.style.cssText = 'min-width: 110px; background: var(--surface-card); border: 1px solid var(--border-subtle); padding: 1rem; border-radius: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.4rem;';
+                card.innerHTML = `
+                    <div style="font-size:0.88rem; font-weight:600; color:var(--text-secondary);">${item.time}</div>
+                    <img src="https://openweathermap.org/img/wn/${item.icon}.png" alt="icon" style="width:40px; height:40px;">
+                    <div style="font-size:1.2rem; font-weight:700; color:var(--text-heading);">${Math.round(item.temp)}°C</div>
+                `;
+                cardsRow.appendChild(card);
+            });
+        }
+    } catch(e) { console.error('Error loading hourly:', e); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const city = localStorage.getItem('lastCity') || 'Tokyo';
+    document.getElementById('hourly-city-input').value = city;
+    loadHourly(city);
+
+    document.getElementById('hourly-search-btn').addEventListener('click', () => {
+        const c = document.getElementById('hourly-city-input').value.trim();
+        if (c) loadHourly(c);
+    });
+});
+</script>
+{% endblock %}

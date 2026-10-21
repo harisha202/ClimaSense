@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY}
+      - UNSPLASH_API_KEY=${UNSPLASH_API_KEY}
+      - AI_API_KEY=${AI_API_KEY}
+      - AI_MODEL=gemini-2.0-flash
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-clima}:${POSTGRES_PASSWORD:-clima_secure_pass}@db:5432/${POSTGRES_DB:-climasense_db}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-clima}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-clima_secure_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-climasense_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-clima}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  celery_worker:
+    build: .
+    restart: always
+    command: celery -A tasks.celery_tasks.celery_app worker --loglevel=info
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-clima}:${POSTGRES_PASSWORD:-clima_secure_pass}@db:5432/${POSTGRES_DB:-climasense_db}
+    depends_on:
+      - redis
+      - db
+
+  celery_beat:
+    build: .
+    restart: always
+    command: celery -A tasks.celery_tasks.celery_app beat --loglevel=info
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=${SECRET_KEY}
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+
+volumes:
+  postgres_data:
+  redis_data:

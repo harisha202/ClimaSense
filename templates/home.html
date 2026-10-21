@@ -1,0 +1,520 @@
+{% extends "base.html" %}
+
+{% block title %}ClimaSense — Explore the world, one forecast at a time{% endblock %}
+
+{% block content %}
+<!-- ============================================================
+     HERO SECTION (Matching Master Reference Screenshot)
+     ============================================================ -->
+<section class="home-hero-section">
+    <div class="home-hero-bg-overlay"></div>
+
+    <div class="home-hero-content">
+        <!-- Floating Celestial Sticker ("Better Weather Brighter Days") -->
+        <div class="home-hero-celestial">
+            <div class="celestial-sun-glow"></div>
+            <div class="celestial-sun-3d">
+                <i class="fa-solid fa-sun"></i>
+            </div>
+            <div class="celestial-cloud-3d">
+                <i class="fa-solid fa-cloud"></i>
+            </div>
+            <div class="celestial-sticker-text">
+                Better<br>Weather<br>Brighter<br>Days
+            </div>
+        </div>
+
+        <div class="home-hero-text-block">
+            <h1 class="home-hero-headline">
+                Explore the world,<br>
+                one forecast at a time.
+            </h1>
+            <p class="home-hero-subheading">
+                ClimaSense gives you accurate weather, beautiful destinations, and deeper insights into our changing climate.
+            </p>
+
+            <!-- Prominent Center Pill Search Bar -->
+            <form id="home-search-form" class="home-search-pill-wrapper" action="{{ url_for('weather.index') }}" method="GET">
+                <i class="fa-solid fa-magnifying-glass home-search-pill-icon"></i>
+                <input type="text" name="city" id="home-city-search" class="home-search-pill-input" placeholder="Search for a city, e.g. New York, London, Paris..." required autocomplete="off">
+                <button type="submit" class="home-search-pill-btn" title="Search weather">
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <!-- Supporting Feature Labels -->
+            <div class="home-hero-badges-row">
+                <div class="home-hero-badge">
+                    <i class="fa-solid fa-cloud-sun" style="color: var(--sun-accent);"></i>
+                    <span>Real-time weather</span>
+                </div>
+                <div class="home-hero-badge">
+                    <i class="fa-solid fa-globe" style="color: var(--blue-primary);"></i>
+                    <span>Global coverage</span>
+                </div>
+                <div class="home-hero-badge">
+                    <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--lavender-accent);"></i>
+                    <span>AI-powered insights</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     SECTION 2: DISCOVER CLIMASENSE (8 Pastel Feature Cards)
+     ============================================================ -->
+<section class="home-section-container">
+    <div class="home-section-header-flex">
+        <div>
+            <h2 class="home-section-title">Discover ClimaSense</h2>
+            <p class="home-section-subtitle">Everything you need to understand the weather and your world.</p>
+        </div>
+        <a href="{{ url_for('weather.explore') }}" class="home-section-link">
+            Explore all features <i class="fa-solid fa-arrow-right"></i>
+        </a>
+    </div>
+
+    <div class="home-discover-grid">
+        <!-- 1. Current Weather -->
+        <a href="{{ url_for('weather.index') }}" class="home-discover-card card-pale-blue">
+            <div class="home-card-icon-wrap" style="color: #F59E0B; background: #FEF3C7;">
+                <i class="fa-solid fa-cloud-sun"></i>
+            </div>
+            <h3 class="home-card-title">Current Weather</h3>
+            <p class="home-card-desc">Live conditions, temperature, humidity and more.</p>
+            <div class="home-card-arrow">&rarr;</div>
+        </a>
+
+        <!-- 2. Hourly Forecast -->
+        <a href="{{ url_for('weather.hourly_forecast_page') }}" class="home-discover-card card-pale-mint">
+            <div class="home-card-icon-wrap" style="color: #10B981; background: #D1FAE5;">
+                <i class="fa-regular fa-clock"></i>
+            </div>
+            <h3 class="home-card-title">Hourly Forecast</h3>
+            <p class="home-card-desc">Plan your day with hourly updates.</p>
+            <div class="home-card-arrow">&rarr;</div>
+        </a>
+
+        <!-- 3. Weekly Forecast -->
+        <a href="{{ url_for('weather.weekly_forecast_page') }}" class="home-discover-card card-pale-lavender">
+            <div class="home-card-icon-wrap" style="color: #8B5CF6; background: #EDE9FE;">
+                <i class="fa-regular fa-calendar-days"></i>
+            </div>
+            <h3 class="home-card-title">Weekly Forecast</h3>
+            <p class="home-card-desc">7-day outlook for better planning.</p>
+            <div class="home-card-arrow">&rarr;</div>
+        </a>
+
+        <!-- 4. Compare Cities -->
+        <a href="{{ url_for('weather.compare') }}" class="home-discover-card card-pale-lilac">
+            <div class="home-card-icon-wrap" style="color: #6366F1; background: #E0E7FF;">
+                <i class="fa-solid fa-code-compare"></i>
+            </div>
+            <h3 class="home-card-title">Compare Cities</h3>
+            <p class="home-card-desc">See how cities stack up.</p>
+            <div class="home-card-arrow">&rarr;</div>
+        </a>
+
+        <!-- 5. Air Quality -->
+        <a href="{{ url_for('weather.air_quality_page') }}" class="home-discover-card card-pale-green">
+            <div class="home-card-icon-wrap" style="color: #059669; background: #A7F3D0;">
+                <i class="fa-solid fa-leaf"></i>
+            </div>
+            <h3 class="home-card-title">Air Quality</h3>
+            <p class="home-card-desc">Check pollution levels and breathe easier.</p>
+            <div class="home-card-arrow">&rarr;</div>
+        </a>
+
+        <!-- 6. UV Index -->
+        <a href="{{ url_for('weather.air_quality_page') }}#uv-section" class="home-discover-card card-pale-yellow">
+            <div class="home-card-icon-wrap" style="color: #D97706; background: #FDE68A;">
+                <i class="fa-solid fa-sun"></i>
+            </div>
+            <h3 class="home-card-title">UV Index</h3>
+            <p class="home-card-desc">Stay safe in the sun.</p>
+            <div class="home-card-arrow">&rarr;</div>
+        </a>
+
+        <!-- 7. City Encyclopedia -->
+        <a href="{{ url_for('weather.index') }}#encyclopedia-wrapper" class="home-discover-card card-pale-purple">
+            <div class="home-card-icon-wrap" style="color: #7C3AED; background: #DDD6FE;">
+                <i class="fa-solid fa-book-open"></i>
+            </div>
+            <h3 class="home-card-title">City Encyclopedia</h3>
+            <p class="home-card-desc">Discover city facts, history and culture.</p>
+            <div class="home-card-arrow">&rarr;</div>
+        </a>
+
+        <!-- 8. Gemini AI -->
+        <a href="{{ url_for('weather.index') }}#chat-panel" class="home-discover-card card-pale-sky">
+            <div class="home-card-icon-wrap" style="color: #2563EB; background: #BFDBFE;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <h3 class="home-card-title">Gemini AI</h3>
+            <p class="home-card-desc">Ask questions and get weather insights.</p>
+            <div class="home-card-arrow">&rarr;</div>
+        </a>
+    </div>
+</section>
+
+<!-- ============================================================
+     SECTION 3: EXPLORE DESTINATIONS (6 Scenic Cards + Category Filters)
+     ============================================================ -->
+<section class="home-section-container">
+    <div class="home-section-header-flex">
+        <div>
+            <h2 class="home-section-title">Explore Destinations</h2>
+            <p class="home-section-subtitle">Discover beautiful cities and natural wonders around the world.</p>
+        </div>
+
+        <!-- Category Filter Pills -->
+        <div class="home-filter-pills" id="dest-filters">
+            <button type="button" class="home-filter-pill active" data-filter="all">All</button>
+            <button type="button" class="home-filter-pill" data-filter="coastal">Coastal</button>
+            <button type="button" class="home-filter-pill" data-filter="mountains">Mountains</button>
+            <button type="button" class="home-filter-pill" data-filter="nature">Nature</button>
+            <button type="button" class="home-filter-pill" data-filter="historic">Historic</button>
+        </div>
+    </div>
+
+    <div class="home-destinations-grid" id="destinations-grid">
+        <!-- 1. Santorini -->
+        <a href="{{ url_for('weather.index') }}?city=Santorini" class="home-dest-card" data-tags="coastal historic">
+            <img src="https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=800&q=80" alt="Santorini, Greece" class="home-dest-img" loading="lazy">
+            <div class="home-dest-overlay">
+                <div>
+                    <h3 class="home-dest-name">Santorini</h3>
+                    <p class="home-dest-country">Greece</p>
+                </div>
+                <div class="home-dest-action-btn"><i class="fa-solid fa-arrow-right"></i></div>
+            </div>
+        </a>
+
+        <!-- 2. Banff -->
+        <a href="{{ url_for('weather.index') }}?city=Banff" class="home-dest-card" data-tags="mountains nature">
+            <img src="https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=800&q=80" alt="Banff, Canada" class="home-dest-img" loading="lazy">
+            <div class="home-dest-overlay">
+                <div>
+                    <h3 class="home-dest-name">Banff</h3>
+                    <p class="home-dest-country">Canada</p>
+                </div>
+                <div class="home-dest-action-btn"><i class="fa-solid fa-arrow-right"></i></div>
+            </div>
+        </a>
+
+        <!-- 3. Bali -->
+        <a href="{{ url_for('weather.index') }}?city=Bali" class="home-dest-card" data-tags="nature coastal">
+            <img src="https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80" alt="Bali, Indonesia" class="home-dest-img" loading="lazy">
+            <div class="home-dest-overlay">
+                <div>
+                    <h3 class="home-dest-name">Bali</h3>
+                    <p class="home-dest-country">Indonesia</p>
+                </div>
+                <div class="home-dest-action-btn"><i class="fa-solid fa-arrow-right"></i></div>
+            </div>
+        </a>
+
+        <!-- 4. Zurich -->
+        <a href="{{ url_for('weather.index') }}?city=Zurich" class="home-dest-card" data-tags="historic mountains">
+            <img src="https://images.unsplash.com/photo-1515488764276-beab7607c1e6?auto=format&fit=crop&w=800&q=80" alt="Zurich, Switzerland" class="home-dest-img" loading="lazy">
+            <div class="home-dest-overlay">
+                <div>
+                    <h3 class="home-dest-name">Zurich</h3>
+                    <p class="home-dest-country">Switzerland</p>
+                </div>
+                <div class="home-dest-action-btn"><i class="fa-solid fa-arrow-right"></i></div>
+            </div>
+        </a>
+
+        <!-- 5. Rio de Janeiro -->
+        <a href="{{ url_for('weather.index') }}?city=Rio%20de%20Janeiro" class="home-dest-card" data-tags="coastal nature">
+            <img src="https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=800&q=80" alt="Rio de Janeiro, Brazil" class="home-dest-img" loading="lazy">
+            <div class="home-dest-overlay">
+                <div>
+                    <h3 class="home-dest-name">Rio de Janeiro</h3>
+                    <p class="home-dest-country">Brazil</p>
+                </div>
+                <div class="home-dest-action-btn"><i class="fa-solid fa-arrow-right"></i></div>
+            </div>
+        </a>
+
+        <!-- 6. Kyoto -->
+        <a href="{{ url_for('weather.index') }}?city=Kyoto" class="home-dest-card" data-tags="historic nature">
+            <img src="https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80" alt="Kyoto, Japan" class="home-dest-img" loading="lazy">
+            <div class="home-dest-overlay">
+                <div>
+                    <h3 class="home-dest-name">Kyoto</h3>
+                    <p class="home-dest-country">Japan</p>
+                </div>
+                <div class="home-dest-action-btn"><i class="fa-solid fa-arrow-right"></i></div>
+            </div>
+        </a>
+    </div>
+</section>
+
+<!-- ============================================================
+     SECTION 4: BOTTOM 3-COLUMN GRID
+     1. Weather Around the Globe (Interactive Map + Popular Locations)
+     2. Meet Your AI Weather Assistant (Avatar + Prompt Chips)
+     3. Climate & Environment (4 Action Cards)
+     ============================================================ -->
+<section class="home-section-container" style="margin-bottom: 4rem;">
+    <div class="home-bottom-grid">
+        <!-- Column 1: Weather Around the Globe -->
+        <div class="home-bottom-card" id="globe-map-section">
+            <div class="home-bottom-card-header">
+                <h3 class="home-bottom-card-title">Weather Around the Globe</h3>
+                <p class="home-bottom-card-subtitle">Explore current conditions and forecasts in cities worldwide.</p>
+            </div>
+
+            <div class="home-globe-content">
+                <!-- Interactive Leaflet Map Box -->
+                <div class="home-map-container-box">
+                    <div id="home-globe-map" style="height: 100%; width: 100%; border-radius: var(--radius-md);"></div>
+                    <a href="{{ url_for('weather.index') }}#map-modal" class="home-map-view-btn">
+                        View Full Map <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                <!-- Popular Locations List -->
+                <div class="home-popular-locations">
+                    <div class="home-popular-title">Popular Locations</div>
+                    <ul class="home-popular-list">
+                        <li>
+                            <a href="{{ url_for('weather.index') }}?city=New%20York" class="home-popular-link">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <div>
+                                    <div class="pop-city">New York</div>
+                                    <div class="pop-country">USA</div>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('weather.index') }}?city=London" class="home-popular-link">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <div>
+                                    <div class="pop-city">London</div>
+                                    <div class="pop-country">UK</div>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('weather.index') }}?city=Paris" class="home-popular-link">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <div>
+                                    <div class="pop-city">Paris</div>
+                                    <div class="pop-country">France</div>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('weather.index') }}?city=Sydney" class="home-popular-link">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <div>
+                                    <div class="pop-city">Sydney</div>
+                                    <div class="pop-country">Australia</div>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ url_for('weather.index') }}?city=Dubai" class="home-popular-link">
+                                <i class="fa-solid fa-location-dot"></i>
+                                <div>
+                                    <div class="pop-city">Dubai</div>
+                                    <div class="pop-country">UAE</div>
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Column 2: Meet Your AI Weather Assistant -->
+        <div class="home-bottom-card" style="border-top: 4px solid var(--lavender-accent);">
+            <div class="home-bottom-card-header">
+                <h3 class="home-bottom-card-title">Meet Your AI Weather Assistant</h3>
+                <p class="home-bottom-card-subtitle">Ask questions, get insights, and understand the weather better.</p>
+            </div>
+
+            <div class="home-ai-content">
+                <!-- Cute 3D Friendly Robot Avatar -->
+                <div class="home-ai-avatar-wrap">
+                    <div class="home-ai-avatar">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                </div>
+
+                <!-- Suggested Query Chips -->
+                <div class="home-ai-chips">
+                    <div class="home-ai-bubble">"Why is the weather changing in this region?"</div>
+                    <div class="home-ai-bubble">"Will it rain this weekend?"</div>
+                    <div class="home-ai-bubble">"What's the best time to visit this city?"</div>
+                </div>
+
+                <a href="{{ url_for('weather.index') }}#chat-panel" class="home-ai-open-btn">
+                    <span>Open Gemini Assistant</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Column 3: Climate & Environment -->
+        <div class="home-bottom-card" id="climate-environment-section" style="border-top: 4px solid var(--green-accent);">
+            <div class="home-bottom-card-header">
+                <div style="display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;">
+                    <div class="climate-badge-icon"><i class="fa-solid fa-leaf"></i></div>
+                    <h3 class="home-bottom-card-title" style="margin: 0;">Climate & Environment</h3>
+                </div>
+                <p class="home-bottom-card-subtitle">Understand our planet. Explore climate trends, air quality, UV levels and more.</p>
+            </div>
+
+            <div class="home-climate-list">
+                <a href="{{ url_for('predictions.predictions') }}" class="home-climate-item">
+                    <div class="climate-item-left">
+                        <div class="climate-item-icon" style="color: var(--blue-primary); background: var(--blue-pale);">
+                            <i class="fa-solid fa-temperature-half"></i>
+                        </div>
+                        <span class="climate-item-text">Climate Information</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right climate-item-arrow"></i>
+                </a>
+
+                <a href="{{ url_for('weather.air_quality_page') }}" class="home-climate-item">
+                    <div class="climate-item-left">
+                        <div class="climate-item-icon" style="color: var(--green-accent); background: var(--green-pale);">
+                            <i class="fa-solid fa-wind"></i>
+                        </div>
+                        <span class="climate-item-text">Environmental Data</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right climate-item-arrow"></i>
+                </a>
+
+                <a href="{{ url_for('weather.help_faq') }}#sustainability" class="home-climate-item">
+                    <div class="climate-item-left">
+                        <div class="climate-item-icon" style="color: #10B981; background: #D1FAE5;">
+                            <i class="fa-solid fa-recycle"></i>
+                        </div>
+                        <span class="climate-item-text">Sustainability Tips</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right climate-item-arrow"></i>
+                </a>
+
+                <a href="{{ url_for('about.about') }}" class="home-climate-item">
+                    <div class="climate-item-left">
+                        <div class="climate-item-icon" style="color: #8B5CF6; background: #EDE9FE;">
+                            <i class="fa-solid fa-lightbulb"></i>
+                        </div>
+                        <span class="climate-item-text">Learn & Make a Difference</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right climate-item-arrow"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     FOOTER (Matching Master Reference Screenshot)
+     ============================================================ -->
+<footer class="home-footer">
+    <div class="home-footer-inner">
+        <div class="home-footer-brand">
+            <div class="home-footer-logo-row">
+                <i class="fa-solid fa-cloud-sun" style="color: var(--blue-primary); font-size: 1.4rem;"></i>
+                <span class="home-footer-brand-name">ClimaSense</span>
+            </div>
+            <p class="home-footer-tagline">Better weather. A brighter tomorrow.</p>
+        </div>
+
+        <div class="home-footer-links">
+            <a href="{{ url_for('about.about') }}">About</a>
+            <a href="{{ url_for('weather.help_faq') }}">Help</a>
+            <a href="{{ url_for('weather.privacy') }}">Privacy</a>
+            <a href="{{ url_for('weather.terms') }}">Terms</a>
+            <a href="{{ url_for('weather.help_faq') }}#contact">Contact</a>
+        </div>
+
+        <div class="home-footer-social">
+            <a href="https://twitter.com" target="_blank" rel="noopener" title="Twitter / X"><i class="fa-brands fa-x-twitter"></i></a>
+            <a href="https://github.com" target="_blank" rel="noopener" title="GitHub"><i class="fa-brands fa-github"></i></a>
+            <a href="https://linkedin.com" target="_blank" rel="noopener" title="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+            <a href="https://youtube.com" target="_blank" rel="noopener" title="YouTube"><i class="fa-brands fa-youtube"></i></a>
+        </div>
+    </div>
+</footer>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // 1. Destination Category Filter Pills
+    const filterBtns = document.querySelectorAll('.home-filter-pill');
+    const destCards = document.querySelectorAll('.home-dest-card');
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const targetFilter = btn.getAttribute('data-filter').toLowerCase();
+
+            destCards.forEach(card => {
+                const tags = card.getAttribute('data-tags') || '';
+                if (targetFilter === 'all' || tags.includes(targetFilter)) {
+                    card.style.display = 'block';
+                    card.style.opacity = '1';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    // 2. Initialize Leaflet Map for "Weather Around the Globe"
+    const mapEl = document.getElementById('home-globe-map');
+    if (mapEl && typeof L !== 'undefined') {
+        try {
+            const globeMap = L.map('home-globe-map', {
+                center: [20, 0],
+                zoom: 1.5,
+                minZoom: 1,
+                maxZoom: 6,
+                zoomControl: true,
+                attributionControl: false
+            });
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(globeMap);
+
+            // Add pins for popular locations
+            const locations = [
+                { city: 'New York', lat: 40.7128, lon: -74.0060, temp: '18°C' },
+                { city: 'London', lat: 51.5074, lon: -0.1278, temp: '15°C' },
+                { city: 'Paris', lat: 48.8566, lon: 2.3522, temp: '17°C' },
+                { city: 'Tokyo', lat: 35.6762, lon: 139.6503, temp: '22°C' },
+                { city: 'Sydney', lat: -33.8688, lon: 151.2093, temp: '21°C' },
+                { city: 'Dubai', lat: 25.2048, lon: 55.2708, temp: '31°C' }
+            ];
+
+            locations.forEach(loc => {
+                const marker = L.circleMarker([loc.lat, loc.lon], {
+                    radius: 6,
+                    fillColor: '#3185D6',
+                    color: '#FFFFFF',
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.9
+                }).addTo(globeMap);
+
+                marker.bindPopup(`<strong>${loc.city}</strong><br><a href="/index?city=${encodeURIComponent(loc.city)}">View Live Weather &rarr;</a>`);
+            });
+        } catch (e) {
+            console.warn('Leaflet map initialization skipped:', e);
+        }
+    }
+});
+</script>
+{% endblock %}

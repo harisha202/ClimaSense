@@ -5,52 +5,38 @@
 {% block extra_css %}
 <style>
     .prediction-panel {
-        background: rgba(255, 255, 255, 0.88);
-        border: 1px solid rgba(255,255,255,0.4);
-        padding: 2.2rem;
-        border-radius: var(--border-radius-lg);
-        backdrop-filter: blur(12px);
-        color: #1e293b;
-        box-shadow: 0 12px 36px rgba(0,0,0,0.15);
-    }
-    
-    body.dark-theme .prediction-panel {
-        background: rgba(20, 28, 45, 0.82);
-        color: #f1f5f9;
-        border-color: rgba(255, 255, 255, 0.12);
-        box-shadow: 0 12px 36px rgba(0,0,0,0.45);
+        background: var(--surface-card);
+        border: 1px solid var(--border-subtle);
+        padding: 2.25rem;
+        border-radius: var(--radius-xl);
+        color: var(--text-heading);
+        box-shadow: var(--shadow-card);
     }
     
     .metric-chip {
         display: inline-flex;
         align-items: center;
         gap: 0.5rem;
-        padding: 0.4rem 0.9rem;
-        border-radius: 20px;
+        padding: 0.45rem 1rem;
+        border-radius: var(--radius-pill);
         font-size: 0.85rem;
-        font-weight: 600;
-        background: rgba(96, 165, 250, 0.15);
-        color: #2563eb;
-    }
-    body.dark-theme .metric-chip {
-        background: rgba(96, 165, 250, 0.2);
-        color: #93c5fd;
+        font-weight: 700;
+        background: var(--blue-pale);
+        color: var(--blue-deep);
+        border: 1px solid var(--blue-soft);
     }
     
     .honest-badge {
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
-        padding: 0.35rem 0.75rem;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        background: rgba(16, 185, 129, 0.15);
-        color: #059669;
-        font-weight: 600;
-    }
-    body.dark-theme .honest-badge {
-        background: rgba(16, 185, 129, 0.2);
-        color: #34d399;
+        padding: 0.45rem 1rem;
+        border-radius: var(--radius-pill);
+        font-size: 0.85rem;
+        background: var(--green-pale);
+        color: var(--green-deep);
+        border: 1px solid var(--green-mint);
+        font-weight: 700;
     }
 </style>
 {% endblock %}
@@ -60,74 +46,74 @@
     <div class="prediction-panel glass" id="main-prediction-panel">
         
         <!-- Animated Date/Time Banner -->
-        <div id="datetime-3d" style="text-align: center; margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 600; color: var(--accent);"></div>
+        <div id="datetime-3d" style="text-align: center; margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700; color: var(--blue-deep);"></div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom: 2rem;">
             <div>
-                <h2 style="margin: 0; display:flex; align-items:center; gap:0.6rem;">
-                    <i class="fa-solid fa-chart-line" style="color: var(--accent);"></i> Climate Analytics & Projections
+                <h2 style="margin: 0; display:flex; align-items:center; gap:0.6rem; color: var(--text-heading); font-size: 1.8rem;">
+                    <i class="fa-solid fa-chart-line" style="color: var(--blue-primary);"></i> Climate Analytics & Projections
                 </h2>
-                <p style="font-size:0.85rem; opacity:0.8; margin-top:0.3rem;">
+                <p style="font-size:0.95rem; color: var(--text-secondary); margin-top:0.35rem;">
                     Transparently comparing logged station observations with provider forecasts & Gemini analysis.
                 </p>
             </div>
             <div style="display:flex; gap:0.8rem; align-items:center;">
-                <input type="text" id="pred-city" class="search-input" placeholder="Enter city (e.g. London)" value="London" style="max-width:240px; padding:0.8rem 1.2rem; font-size:1rem;">
-                <button id="load-pred-btn" class="search-btn" style="padding:0.8rem 1.4rem; font-size:1rem;">Analyze</button>
+                <input type="text" id="pred-city" class="search-input" placeholder="Enter city (e.g. London)" value="London" style="max-width:240px; padding:0.8rem 1.25rem; font-size:1rem; border-radius: var(--radius-pill);">
+                <button id="load-pred-btn" class="search-btn" style="padding:0.8rem 1.6rem; font-size:1rem; border-radius: var(--radius-pill);">Analyze</button>
             </div>
         </div>
         
         <div id="pred-loading" class="hidden" style="text-align:center; padding: 3rem;">
-            <i class="fa-solid fa-microchip fa-spin fa-3x" style="color: var(--accent);"></i>
-            <p class="mt-3" style="font-weight:600;">Analyzing historical weather logs & provider forecasts...</p>
+            <i class="fa-solid fa-microchip fa-spin fa-3x" style="color: var(--blue-primary);"></i>
+            <p class="mt-3" style="font-weight:600; color: var(--text-heading); margin-top: 1rem;">Analyzing historical weather logs & provider forecasts...</p>
         </div>
 
         <div class="hidden" id="prediction-results">
             <!-- Source Provenance Notice -->
-            <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid rgba(150,150,150,0.2);">
+            <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom:1.5rem; padding-bottom:1rem; border-bottom:1px solid var(--border-subtle);">
                 <span class="honest-badge"><i class="fa-solid fa-shield-halved"></i> Data Grounding Active</span>
                 <span id="data-source-label" class="metric-chip"><i class="fa-solid fa-database"></i> Source Breakdown</span>
             </div>
 
             <!-- Comparison Cards Grid -->
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1.2rem; margin-bottom: 2rem;">
-                <div class="glass" style="padding:1.2rem; border-radius:12px; text-align:center;">
-                    <div style="font-size:0.85rem; opacity:0.8; margin-bottom:0.4rem;">Today's Measured Condition</div>
-                    <div id="today-temp-display" style="font-size:2rem; font-weight:700; color:var(--accent);">--</div>
-                    <div id="today-desc-display" style="font-size:0.9rem; margin-top:0.3rem;">--</div>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1.25rem; margin-bottom: 2rem;">
+                <div class="glass" style="padding:1.5rem; border-radius:var(--radius-lg); text-align:center;">
+                    <div style="font-size:0.85rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:0.4rem;">Today's Measured Condition</div>
+                    <div id="today-temp-display" style="font-size:2.4rem; font-weight:800; color:var(--blue-deep);">--</div>
+                    <div id="today-desc-display" style="font-size:0.95rem; margin-top:0.35rem; color:var(--blue-primary); font-weight:600;">--</div>
                 </div>
-                <div class="glass" style="padding:1.2rem; border-radius:12px; text-align:center;">
-                    <div style="font-size:0.85rem; opacity:0.8; margin-bottom:0.4rem;">Tomorrow (Projected)</div>
-                    <div id="tomorrow-temp-display" style="font-size:2rem; font-weight:700; color:#10b981;">--</div>
-                    <div id="tomorrow-desc-display" style="font-size:0.9rem; margin-top:0.3rem;">--</div>
+                <div class="glass" style="padding:1.5rem; border-radius:var(--radius-lg); text-align:center;">
+                    <div style="font-size:0.85rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:0.4rem;">Tomorrow (Projected)</div>
+                    <div id="tomorrow-temp-display" style="font-size:2.4rem; font-weight:800; color:var(--green-deep);">--</div>
+                    <div id="tomorrow-desc-display" style="font-size:0.95rem; margin-top:0.35rem; color:var(--green-accent); font-weight:600;">--</div>
                 </div>
-                <div class="glass" style="padding:1.2rem; border-radius:12px; text-align:center;">
-                    <div style="font-size:0.85rem; opacity:0.8; margin-bottom:0.4rem;">7-Day Station History</div>
-                    <div id="history-temp-display" style="font-size:2rem; font-weight:700; color:#60a5fa;">--</div>
-                    <div id="history-count-display" style="font-size:0.85rem; margin-top:0.3rem;">-- logged records</div>
+                <div class="glass" style="padding:1.5rem; border-radius:var(--radius-lg); text-align:center;">
+                    <div style="font-size:0.85rem; font-weight:700; color:var(--text-secondary); text-transform:uppercase; margin-bottom:0.4rem;">7-Day Station History</div>
+                    <div id="history-temp-display" style="font-size:2.4rem; font-weight:800; color:var(--blue-primary);">--</div>
+                    <div id="history-count-display" style="font-size:0.88rem; margin-top:0.35rem; color:var(--text-secondary);">-- logged records</div>
                 </div>
             </div>
             
-            <div style="position: relative; height:320px; width:100%; margin-bottom: 2rem; background: rgba(255,255,255,0.05); border-radius: 12px; padding: 1rem; border:1px solid rgba(150,150,150,0.15);">
+            <div style="position: relative; height:320px; width:100%; margin-bottom: 2rem; background: var(--surface-card); border-radius: var(--radius-lg); padding: 1.25rem; border:1px solid var(--border-subtle); box-shadow: var(--shadow-subtle);">
                 <canvas id="prediction-canvas"></canvas>
             </div>
             
-            <div class="alert-banner glass" id="ai-insight-banner" style="border-left: 4px solid var(--accent); padding: 1.5rem; border-radius:10px;">
+            <div class="glass" id="ai-insight-banner" style="border-left: 4px solid var(--lavender-accent); padding: 1.5rem 1.75rem; border-radius:var(--radius-md); background: var(--lavender-pale);">
                 <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.5rem;">
-                    <i class="fa-solid fa-robot" style="color:var(--accent); font-size:1.2rem;"></i>
-                    <strong id="ai-insight-heading">Meteorological Trend Insight:</strong>
+                    <i class="fa-solid fa-robot" style="color:var(--lavender-accent); font-size:1.25rem;"></i>
+                    <strong id="ai-insight-heading" style="color:var(--text-heading); font-size: 1.05rem;">Meteorological Trend Insight:</strong>
                 </div>
-                <p id="ai-insight-text" style="line-height:1.6; margin:0;"></p>
-                <div id="ai-insight-disclaimer" style="margin-top:0.8rem; font-size:0.75rem; opacity:0.7;">
-                    * Notice: AI explanations provide analytical insights and do not simulate numerical weather prediction (NWP) atmospheric physics.
+                <p id="ai-insight-text" style="line-height:1.7; margin:0; color:var(--text-body); font-size: 0.98rem;"></p>
+                <div id="ai-insight-disclaimer" style="margin-top:0.8rem; font-size:0.8rem; color:var(--text-secondary);">
+                    * Notice: Explanations provide empirical trend analysis and do not simulate numerical weather prediction (NWP) atmospheric physics.
                 </div>
             </div>
         </div>
 
         <div class="hidden" id="prediction-empty-state" style="text-align: center; padding: 3rem;">
-            <i class="fa-solid fa-chart-line fa-3x" style="color: rgba(150,150,150,0.4); margin-bottom: 1rem;"></i>
-            <h3 style="margin-bottom:0.5rem;">City Weather Data Unavailable</h3>
-            <p id="pred-empty-message" style="opacity:0.8;">Please verify the city name or check your connection.</p>
+            <i class="fa-solid fa-chart-line fa-3x" style="color: var(--text-disabled); margin-bottom: 1rem;"></i>
+            <h3 style="margin-bottom:0.5rem; color: var(--text-heading);">City Weather Data Unavailable</h3>
+            <p id="pred-empty-message" style="color: var(--text-secondary);">Please verify the city name or check your connection.</p>
         </div>
 
     </div>
@@ -178,112 +164,70 @@ async function fetchPrediction() {
         
         if(data.success && data.prediction) {
             const pred = data.prediction;
+            document.getElementById('today-temp-display').textContent = `${Math.round(pred.today_current_temp)}°C`;
+            document.getElementById('today-desc-display').textContent = pred.today_desc;
+            document.getElementById('tomorrow-temp-display').textContent = `${Math.round(pred.tomorrow_forecast_temp)}°C`;
+            document.getElementById('tomorrow-desc-display').textContent = pred.tomorrow_desc;
+            
+            const histAvg = pred.history_avg_temp !== null ? `${Math.round(pred.history_avg_temp)}°C` : 'N/A';
+            document.getElementById('history-temp-display').textContent = histAvg;
+            document.getElementById('history-count-display').textContent = `${pred.history_count} recorded snapshots`;
+            
+            document.getElementById('data-source-label').innerHTML = `<i class="fa-solid fa-database"></i> Provider: ${pred.data_source}`;
+            document.getElementById('ai-insight-text').textContent = pred.ai_summary;
+
             document.getElementById('prediction-results').classList.remove('hidden');
             
-            // Format temperatures
-            const unit = localStorage.getItem('tempUnit') === 'F' ? '°F' : '°C';
-            const formatTemp = (cVal) => {
-                if (cVal === null || cVal === undefined) return '--';
-                if (unit === '°F') return Math.round((cVal * 9/5) + 32) + '°F';
-                return Math.round(cVal * 10) / 10 + '°C';
-            };
+            // Render Trend Chart
+            const ctx = document.getElementById('prediction-canvas').getContext('2d');
+            const labels = ['7-Day Avg Station', 'Today Measured', 'Tomorrow Project.'];
+            const temps = [pred.history_avg_temp !== null ? pred.history_avg_temp : pred.today_current_temp, pred.today_current_temp, pred.tomorrow_forecast_temp];
             
-            document.getElementById('today-temp-display').textContent = formatTemp(pred.today.temp);
-            document.getElementById('today-desc-display').textContent = pred.today.description;
-            
-            document.getElementById('tomorrow-temp-display').textContent = formatTemp(pred.tomorrow.temp);
-            document.getElementById('tomorrow-desc-display').textContent = `${pred.tomorrow.description} (${pred.tomorrow.source || 'Projection'})`;
-            
-            const hist = pred.history_summary;
-            if (hist && hist.has_history) {
-                document.getElementById('history-temp-display').textContent = formatTemp(hist.seven_day_avg_temp);
-                document.getElementById('history-count-display').textContent = `${hist.observations_count} logged record(s)`;
-            } else {
-                document.getElementById('history-temp-display').textContent = '--';
-                document.getElementById('history-count-display').textContent = 'Tracking started today';
-            }
-            
-            document.getElementById('ai-insight-heading').textContent = `${pred.provider} Trend Analysis:`;
-            document.getElementById('ai-insight-text').textContent = pred.ai_insight;
-            
-            renderPredictionChart(pred, unit);
-        } else {
-            document.getElementById('prediction-empty-state').classList.remove('hidden');
-            document.getElementById('pred-empty-message').textContent = data.message || 'Unable to retrieve prediction.';
-        }
-    } catch(e) {
-        console.error(e);
-        document.getElementById('pred-loading').classList.add('hidden');
-        document.getElementById('prediction-empty-state').classList.remove('hidden');
-        document.getElementById('pred-empty-message').textContent = 'An error occurred while fetching predictions.';
-    }
-}
-
-function renderPredictionChart(pred, unit) {
-    const ctx = document.getElementById('prediction-canvas').getContext('2d');
-    if(predChart) predChart.destroy();
-    
-    const isDark = document.body.classList.contains('dark-theme');
-    const textColor = isDark ? '#f1f5f9' : '#1e293b';
-    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-    
-    let tToday = pred.today.temp;
-    let tTom = pred.tomorrow.temp;
-    let tHist = pred.history_summary && pred.history_summary.has_history ? pred.history_summary.seven_day_avg_temp : null;
-    
-    if (unit === '°F') {
-        tToday = (tToday * 9/5) + 32;
-        tTom = (tTom * 9/5) + 32;
-        if (tHist !== null) tHist = (tHist * 9/5) + 32;
-    }
-    
-    const labels = ['7-Day Average', 'Today (Observed)', 'Tomorrow (Projected)'];
-    const dataVals = [tHist !== null ? Math.round(tHist * 10)/10 : null, Math.round(tToday * 10)/10, Math.round(tTom * 10)/10];
-    const colors = [
-        'rgba(96, 165, 250, 0.75)',
-        'rgba(255, 183, 3, 0.75)',
-        'rgba(16, 185, 129, 0.75)'
-    ];
-    
-    predChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: `Temperature (${unit})`,
-                data: dataVals,
-                backgroundColor: colors,
-                borderColor: colors.map(c => c.replace('0.75', '1')),
-                borderWidth: 1.5,
-                borderRadius: 8
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: false,
-                    grid: { color: gridColor },
-                    ticks: { color: textColor }
+            if (predChart) predChart.destroy();
+            predChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Temperature (°C)',
+                        data: temps,
+                        borderColor: '#3185D6',
+                        backgroundColor: 'rgba(49, 133, 214, 0.12)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: ['#62B5F5', '#3185D6', '#48A878'],
+                        pointRadius: 6,
+                        borderWidth: 3
+                    }]
                 },
-                x: {
-                    grid: { display: false },
-                    ticks: { color: textColor, font: { weight: '600' } }
-                }
-            },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(ctx) {
-                            return ctx.raw !== null ? ` ${ctx.raw} ${unit}` : ' No historical data yet';
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#20364B', font: { weight: '600' } } }
+                    },
+                    scales: {
+                        y: { 
+                            ticks: { color: '#64788B' },
+                            grid: { color: 'rgba(221, 234, 243, 0.6)' }
+                        },
+                        x: { 
+                            ticks: { color: '#20364B' },
+                            grid: { color: 'transparent' }
                         }
                     }
                 }
-            }
+            });
+
+        } else {
+            document.getElementById('prediction-empty-state').classList.remove('hidden');
+            if(data.message) document.getElementById('pred-empty-message').textContent = data.message;
         }
-    });
+    } catch(err) {
+        console.error('Error fetching projections:', err);
+        document.getElementById('pred-loading').classList.add('hidden');
+        document.getElementById('prediction-empty-state').classList.remove('hidden');
+    }
 }
 </script>
 {% endblock %}

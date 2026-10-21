@@ -2,17 +2,27 @@
 
 {% block title %}Search History - ClimaSense{% endblock %}
 
-{% block extra_css %}{% endblock %}
-
 {% block content %}
-<div style="max-width:800px; margin: 0 auto; padding: 2rem;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 2rem;">
-        <h2>Search History</h2>
-        <button id="clear-history-btn" class="logout-btn" style="background:transparent; color:var(--danger); border:1px solid var(--danger);">Clear History</button>
+<div class="container" style="max-width:880px; margin: 2rem auto; padding: 0 1rem;">
+    <div class="glass" style="display:flex; justify-content:space-between; align-items:center; padding: 2rem 2.5rem; margin-bottom: 2rem; border-radius: var(--radius-xl);">
+        <div>
+            <h2 style="margin: 0 0 0.35rem 0; font-size: 1.8rem; display: flex; align-items: center; gap: 0.6rem; color: var(--text-heading);">
+                <i class="fa-solid fa-clock-rotate-left" style="color: var(--blue-primary);"></i> Search History
+            </h2>
+            <p style="color: var(--text-secondary); font-size: 0.95rem; margin: 0;">Your recent verified meteorological search activity.</p>
+        </div>
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a id="export-history-csv-btn" href="/api/history/export/csv" class="export-csv-btn" style="padding: 0.6rem 1.25rem; border-radius: var(--radius-pill);">
+                <i class="fa-solid fa-file-csv"></i> Export Search History CSV
+            </a>
+            <button id="clear-history-btn" class="logout-btn" style="border:1px solid var(--danger); padding: 0.6rem 1.25rem; border-radius: var(--radius-pill); cursor: pointer;">
+                <i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> Clear History
+            </button>
+        </div>
     </div>
     
-    <div class="history-list glass" style="padding:1rem;">
-        <ul id="history-ul" style="list-style:none;">
+    <div class="history-list glass" style="padding: 2rem; border-radius: var(--radius-lg);">
+        <ul id="history-ul" style="list-style:none; padding: 0; margin: 0;">
             <!-- Populated by JS -->
         </ul>
     </div>
@@ -29,49 +39,56 @@ async function loadHistory() {
         const ul = document.getElementById('history-ul');
         ul.innerHTML = '';
         
-        if (data.success && data.history.length > 0) {
+        if (data.success && data.history && data.history.length > 0) {
             data.history.forEach(item => {
                 const li = document.createElement('li');
                 li.className = 'history-item';
-                li.style.padding = '1rem';
-                li.style.borderBottom = '1px solid rgba(255,255,255,0.1)';
-                li.style.display = 'flex';
-                li.style.justifyContent = 'space-between';
-                li.style.alignItems = 'center';
+                li.style.cssText = 'padding: 1.2rem 0; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;';
                 
                 const date = new Date(item.searched_at).toLocaleString();
                 
                 li.innerHTML = `
                     <div>
-                        <strong>${item.city}</strong>
-                        <div style="font-size:0.85rem; color:var(--text-secondary);">${date}</div>
+                        <strong style="font-size: 1.15rem; color: var(--text-heading);">${item.city}</strong>
+                        <div style="font-size:0.88rem; color:var(--text-secondary); margin-top: 4px;">
+                            <i class="fa-regular fa-clock" style="margin-right: 4px;"></i> ${date}
+                        </div>
                     </div>
-                    <a href="/index?city=${encodeURIComponent(item.city)}" style="color:var(--accent); text-decoration:none;"><i class="fa-solid fa-arrow-rotate-right"></i> Search Again</a>
+                    <a href="/index?city=${encodeURIComponent(item.city)}" class="btn-icon" style="text-decoration:none; padding: 0.5rem 1rem;">
+                        <i class="fa-solid fa-arrow-rotate-right" style="margin-right: 4px; color: var(--blue-primary);"></i> Search Again
+                    </a>
                 `;
                 ul.appendChild(li);
             });
         } else {
-            ul.innerHTML = '<li style="padding:1rem; text-align:center;">No recent searches</li>';
+            ul.innerHTML = `
+                <li style="padding: 3.5rem 1rem; text-align: center; color: var(--text-secondary);">
+                    <i class="fa-solid fa-clock-rotate-left" style="font-size: 3rem; margin-bottom: 1rem; color: var(--blue-secondary); opacity: 0.8;"></i>
+                    <h3 style="font-size: 1.35rem; color: var(--text-heading); margin-bottom: 0.5rem;">No Searches Recorded Yet</h3>
+                    <p style="font-size: 0.98rem; margin: 0 0 1.5rem 0;">Search for cities on the main dashboard to build your search history.</p>
+                    <a href="/index" class="search-btn" style="display: inline-flex; text-decoration: none; border-radius: var(--radius-pill); padding: 0.75rem 1.75rem;">Explore Weather</a>
+                </li>
+            `;
         }
     } catch(e) {
-        console.error('Error loading history', e);
+        console.error('History fetch error:', e);
     }
 }
 
-document.getElementById('clear-history-btn').addEventListener('click', async () => {
-    if(confirm('Clear all search history?')) {
-        try {
-            const res = await fetch('/api/clear-history', {method:'POST'});
-            const data = await res.json();
-            if(data.success) {
-                loadHistory();
-            }
-        } catch(e) {
-            console.error(e);
+document.addEventListener('DOMContentLoaded', () => {
+    loadHistory();
+    
+    document.getElementById('clear-history-btn').addEventListener('click', async () => {
+        if(confirm('Are you sure you want to clear your search history?')) {
+            try {
+                const res = await fetch('/api/search-history/clear', { method: 'POST' });
+                const d = await res.json();
+                if(d.success) {
+                    loadHistory();
+                }
+            } catch(e) { console.error(e); }
         }
-    }
+    });
 });
-
-document.addEventListener('DOMContentLoaded', loadHistory);
 </script>
 {% endblock %}

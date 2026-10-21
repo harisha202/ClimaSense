@@ -1,553 +1,308 @@
 {% extends "base.html" %}
 
-{% block title %}ClimaSense - Weather Dashboard{% endblock %}
-
-{% block extra_css %}
-<style>
-    /* Dynamic Weather Visuals Layer */
-    .weather-effects-layer {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        pointer-events: none;
-        z-index: 0;
-        overflow: hidden;
-        transition: opacity 0.8s ease;
-    }
-    
-    /* Sunshine radiant glow */
-    .weather-effects-layer.sunshine {
-        background: radial-gradient(circle at 85% 15%, rgba(255, 204, 0, 0.22) 0%, rgba(255, 183, 3, 0.08) 35%, transparent 65%);
-    }
-    
-    /* Rain particle animation */
-    .weather-effects-layer.rain::before {
-        content: "";
-        position: absolute;
-        top: -100px;
-        left: 0;
-        width: 100%;
-        height: 150%;
-        background-image: repeating-linear-gradient(transparent, transparent 20px, rgba(147, 197, 253, 0.35) 21px, rgba(96, 165, 250, 0.35) 24px);
-        animation: rainFall 0.75s linear infinite;
-        opacity: 0.65;
-    }
-    @keyframes rainFall {
-        0% { transform: translateY(0); }
-        100% { transform: translateY(80px); }
-    }
-    
-    /* Thunderstorm lightning flash */
-    .weather-effects-layer.thunderstorm {
-        animation: lightningFlash 8s infinite ease-in-out;
-    }
-    @keyframes lightningFlash {
-        0%, 93%, 97%, 100% { background: transparent; }
-        94% { background: rgba(255, 255, 255, 0.28); }
-        96% { background: rgba(220, 235, 255, 0.22); }
-    }
-    
-    /* Subtle cloud drift */
-    .weather-effects-layer.clouds::after {
-        content: "";
-        position: absolute;
-        top: 10%;
-        left: -20%;
-        width: 140%;
-        height: 50%;
-        background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.12) 0%, transparent 70%);
-        animation: cloudDrift 45s linear infinite alternate;
-    }
-    @keyframes cloudDrift {
-        from { transform: translateX(-5%); }
-        to { transform: translateX(5%); }
-    }
-    
-    @media (prefers-reduced-motion: reduce) {
-        .weather-effects-layer, .weather-effects-layer::before, .weather-effects-layer::after {
-            animation: none !important;
-            transition: none !important;
-        }
-    }
-
-    /* AI Weather Briefing Card */
-    .card-ai-briefing {
-        grid-column: 1 / -1;
-        padding: 1.5rem 1.8rem;
-        border-radius: var(--border-radius-lg);
-        position: relative;
-        overflow: hidden;
-        border-left: 4px solid var(--accent);
-    }
-    
-    .briefing-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 0.8rem;
-        margin-bottom: 0.8rem;
-    }
-    
-    .ai-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        padding: 0.3rem 0.8rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(168, 85, 247, 0.2));
-        color: #3b82f6;
-        border: 1px solid rgba(96, 165, 250, 0.3);
-    }
-    body.dark-theme .ai-badge {
-        color: #93c5fd;
-    }
-    
-    .refresh-briefing-btn {
-        background: none;
-        border: none;
-        color: var(--text-secondary);
-        font-size: 0.95rem;
-        cursor: pointer;
-        padding: 0.3rem 0.6rem;
-        border-radius: 6px;
-        transition: all 0.2s;
-    }
-    .refresh-briefing-btn:hover {
-        color: var(--accent);
-        transform: rotate(45deg);
-    }
-
-    /* Floating Chat Widget */
-    .chat-toggle-btn {
-        position: fixed;
-        bottom: 2rem;
-        right: 2rem;
-        padding: 0.85rem 1.4rem;
-        border-radius: 30px;
-        background: var(--accent);
-        color: #111;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        gap: 0.6rem;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-        cursor: pointer;
-        z-index: 1050;
-        border: 1px solid rgba(255,255,255,0.4);
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .chat-toggle-btn:hover {
-        transform: translateY(-3px) scale(1.03);
-        box-shadow: 0 12px 28px rgba(0,0,0,0.35);
-    }
-    
-    .chat-panel {
-        position: fixed;
-        bottom: 6rem;
-        right: 2rem;
-        width: 380px;
-        max-width: calc(100vw - 3rem);
-        height: 520px;
-        max-height: calc(100vh - 8rem);
-        border-radius: 20px;
-        display: flex;
-        flex-direction: column;
-        z-index: 1050;
-        box-shadow: 0 16px 48px rgba(0,0,0,0.3);
-        overflow: hidden;
-        border: 1px solid rgba(255,255,255,0.25);
-    }
-    
-    .chat-header {
-        padding: 1rem 1.2rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid rgba(150,150,150,0.2);
-    }
-    
-    .chat-body {
-        flex: 1;
-        padding: 1rem;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 0.8rem;
-    }
-    
-    .chat-bubble {
-        padding: 0.75rem 1rem;
-        border-radius: 14px;
-        font-size: 0.9rem;
-        line-height: 1.45;
-        max-width: 85%;
-        word-wrap: break-word;
-    }
-    .chat-bubble.user {
-        align-self: flex-end;
-        background: var(--accent);
-        color: #111;
-        font-weight: 500;
-        border-bottom-right-radius: 4px;
-    }
-    .chat-bubble.ai {
-        align-self: flex-start;
-        background: rgba(255, 255, 255, 0.8);
-        color: #1e293b;
-        border-bottom-left-radius: 4px;
-        border: 1px solid rgba(0,0,0,0.08);
-    }
-    body.dark-theme .chat-bubble.ai {
-        background: rgba(30, 41, 59, 0.9);
-        color: #f1f5f9;
-        border: 1px solid rgba(255,255,255,0.1);
-    }
-    
-    .chat-chips-container {
-        padding: 0.5rem 1rem;
-        display: flex;
-        gap: 0.4rem;
-        overflow-x: auto;
-        border-top: 1px solid rgba(150,150,150,0.15);
-        white-space: nowrap;
-    }
-    .chat-chip {
-        padding: 0.35rem 0.75rem;
-        border-radius: 16px;
-        font-size: 0.78rem;
-        background: rgba(255,255,255,0.15);
-        border: 1px solid rgba(150,150,150,0.25);
-        cursor: pointer;
-        color: var(--text-primary);
-        transition: background 0.2s;
-    }
-    .chat-chip:hover {
-        background: var(--accent);
-        color: #000;
-    }
-    
-    .chat-input-row {
-        padding: 0.8rem 1rem;
-        display: flex;
-        gap: 0.5rem;
-        border-top: 1px solid rgba(150,150,150,0.2);
-    }
-    .chat-input-row input {
-        flex: 1;
-        padding: 0.6rem 1rem;
-        border-radius: 20px;
-        border: 1px solid rgba(150,150,150,0.3);
-        background: rgba(255,255,255,0.1);
-        color: var(--text-primary);
-        font-size: 0.88rem;
-    }
-    .chat-input-row input:focus {
-        outline: none;
-        border-color: var(--accent);
-    }
-    .chat-input-row button {
-        padding: 0.6rem 1rem;
-        border-radius: 20px;
-        background: var(--accent);
-        color: #111;
-        border: none;
-        cursor: pointer;
-        font-weight: bold;
-    }
-    
-    /* Unsplash attribution */
-    .photo-attribution {
-        position: fixed;
-        bottom: 0.5rem;
-        left: 1rem;
-        padding: 0.35rem 0.85rem;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        opacity: 0.85;
-        z-index: 100;
-    }
-    .photo-attribution a {
-        color: var(--accent);
-        text-decoration: underline;
-    }
-</style>
-{% endblock %}
+{% block title %}ClimaSense - Weather & City Discovery{% endblock %}
 
 {% block content %}
-<!-- Dynamic Weather Visual Effects Layer -->
-<div id="weather-effects-layer" class="weather-effects-layer"></div>
-
 <div id="alert-banner" class="alert-banner hidden"></div>
-<div id="highlights-banner" class="highlights-banner glass hidden" style="margin-bottom: 1rem; padding: 0.8rem 1.5rem; display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 1rem;">
-    <div><i class="fa-solid fa-cloud-sun" style="color:var(--accent);"></i> <strong id="hb-weather">Pleasant Weather</strong></div>
-    <div style="opacity: 0.3;">•</div>
-    <div><i class="fa-solid fa-umbrella" style="color:#60a5fa;"></i> <strong id="hb-rain">Low Rain Probability</strong></div>
-    <div style="opacity: 0.3;">•</div>
-    <div><i class="fa-solid fa-leaf" style="color:#10b981;"></i> <strong id="hb-aqi">Good Air Quality</strong></div>
+
+<!-- Top Highlights Summary Pill -->
+<div id="highlights-banner" class="highlights-banner hidden">
+    <div><i class="fa-solid fa-cloud-sun" style="color:var(--sun-accent);"></i> <strong id="hb-weather" style="color:var(--text-heading);">Pleasant Weather</strong></div>
+    <div style="color:var(--border-subtle);">•</div>
+    <div><i class="fa-solid fa-umbrella" style="color:var(--blue-secondary);"></i> <strong id="hb-rain" style="color:var(--text-heading);">Low Rain Probability</strong></div>
+    <div style="color:var(--border-subtle);">•</div>
+    <div><i class="fa-solid fa-leaf" style="color:var(--green-accent);"></i> <strong id="hb-aqi" style="color:var(--text-heading);">Good Air Quality</strong></div>
 </div>
 
-<div class="dashboard-controls">
-    <div class="search-container">
-        <input type="text" id="city-input" class="search-input" placeholder="Enter city name..." autocomplete="off">
-        <button id="search-btn" class="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
-        <button id="geo-btn" class="geo-btn" title="Current Location"><i class="fa-solid fa-map-location-dot"></i></button>
-        <button id="settings-btn" class="settings-btn" title="Settings"><i class="fa-solid fa-gear"></i></button>
+<!-- Loading Skeleton Shimmer -->
+<div id="loading-spinner" class="skeleton-container hidden" style="padding: 1.5rem; max-width: 1200px; margin: 0 auto;">
+    <div class="skeleton-card glass skeleton-pulse" style="height: 380px; width: 100%; margin-bottom: 1.5rem; border-radius: var(--radius-xl);"></div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+        <div class="skeleton-card glass skeleton-pulse" style="height: 220px; border-radius: var(--radius-lg);"></div>
+        <div class="skeleton-card glass skeleton-pulse" style="height: 220px; border-radius: var(--radius-lg);"></div>
+        <div class="skeleton-card glass skeleton-pulse" style="height: 220px; border-radius: var(--radius-lg);"></div>
     </div>
+</div>
+
+<!-- ============================================================
+     HERO SECTION: PANORAMA SKYLINE + FLOATING WEATHER CARD + 3D SCENE
+     Matches Master Mockup Target Perfectly
+     ============================================================ -->
+<section id="hero-panorama" class="weather-hero-panorama">
+    <div class="hero-panorama-overlay"></div>
     
-    <div class="suggestions-row hidden" id="suggestions-row"></div>
-</div>
+    <!-- Floating Weather Summary Card -->
+    <div class="hero-weather-card">
+        <h1 id="hero-greeting" class="hero-greeting">Good afternoon, Tokyo ☀️</h1>
+        <div class="hero-location-line">
+            <i class="fa-solid fa-location-dot" style="color: var(--blue-primary);"></i>
+            <span id="city-name">Tokyo, Japan</span>
+        </div>
+        <div class="hero-datetime-line">
+            <i class="fa-regular fa-calendar"></i>
+            <span id="city-local-time">Apr 26, 2025 | 2:45 PM (JST)</span>
+        </div>
 
-<div id="loading-spinner" class="skeleton-container hidden" style="padding: 2rem; max-width: 1200px; margin: 0 auto;">
-    <div class="skeleton-card glass skeleton-pulse" style="height: 180px; width: 100%; margin-bottom: 1rem; border-radius: 16px;"></div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
-        <div class="skeleton-card glass skeleton-pulse" style="height: 120px; border-radius: 12px;"></div>
-        <div class="skeleton-card glass skeleton-pulse" style="height: 120px; border-radius: 12px;"></div>
-        <div class="skeleton-card glass skeleton-pulse" style="height: 120px; border-radius: 12px;"></div>
-        <div class="skeleton-card glass skeleton-pulse" style="height: 120px; border-radius: 12px;"></div>
+        <div class="hero-card-grid">
+            <!-- Left: Icon & Temp -->
+            <div>
+                <div class="hero-temp-block">
+                    <img id="weather-icon" src="https://openweathermap.org/img/wn/02d@4x.png" alt="Weather Icon" style="width: 70px; height: 70px;">
+                    <div>
+                        <div id="temperature" class="hero-temp-num">22°C</div>
+                    </div>
+                </div>
+                <div id="weather-desc" class="hero-cond-text">Partly Cloudy</div>
+                <div id="feels-like-label" class="hero-feels-text">Feels like 23°C</div>
+            </div>
+
+            <!-- Right: Three Core Metrics -->
+            <div class="hero-metrics-column">
+                <div class="hero-metric-row">
+                    <i class="fa-solid fa-droplet" style="color: var(--blue-secondary); width: 16px;"></i>
+                    <span>Humidity: <strong id="humidity">58%</strong></span>
+                </div>
+                <div class="hero-metric-row">
+                    <i class="fa-solid fa-wind" style="color: var(--blue-primary); width: 16px;"></i>
+                    <span>Wind: <strong id="wind-speed">12 km/h</strong></span>
+                </div>
+                <div class="hero-metric-row">
+                    <i class="fa-solid fa-sun" style="color: var(--sun-accent); width: 16px;"></i>
+                    <span>UV Index: <strong id="uv-index">4 (Moderate)</strong></span>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: flex-end;">
+            <a id="export-current-weather-csv" href="/api/weather/Tokyo/export/csv" class="export-csv-btn" title="Export Current Weather Data to CSV">
+                <i class="fa-solid fa-file-csv"></i> Export CSV
+            </a>
+        </div>
+    </div>
+
+    <!-- Center/Right 3D Atmospheric Celestial Simulation -->
+    <div class="hero-3d-celestial">
+        <div id="weather-3d-scene" class="weather-3d-container sky-day" style="height: 100%; border: none; background: transparent; box-shadow: none;">
+            <!-- Rendered with CSS 3D transforms via weather3d.js -->
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================
+     MAIN 3-COLUMN CONTENT GRID (5-Day, Hourly Chart, Quick Info)
+     ============================================================ -->
+<div id="dashboard-wrapper" class="dashboard-main-columns">
+    
+    <!-- Column 1: 5-Day Forecast -->
+    <div class="dashboard-card-box">
+        <div class="card-header-flex">
+            <span class="card-header-title">
+                <i class="fa-regular fa-calendar-days" style="color: var(--blue-primary);"></i> 5-Day Forecast
+            </span>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span id="fc-city-badge" class="card-header-badge">📍 Tokyo, Japan</span>
+                <a id="export-weekly-forecast-csv" href="/api/forecast/Tokyo/export/weekly/csv" class="export-csv-btn" title="Export 5-Day Forecast to CSV">
+                    <i class="fa-solid fa-file-csv"></i> Export CSV
+                </a>
+            </div>
+        </div>
+        <div id="forecast-container" class="forecast-5day-grid">
+            <!-- 5 Vertical Day Tiles Injected via JS -->
+        </div>
+    </div>
+
+    <!-- Column 2: Hourly Forecast -->
+    <div class="dashboard-card-box">
+        <div class="card-header-flex">
+            <span class="card-header-title">
+                <i class="fa-regular fa-clock" style="color: var(--blue-primary);"></i> Hourly Forecast
+            </span>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span id="hourly-today-badge" class="card-header-badge" style="background: var(--blue-pale); color: var(--blue-deep); padding: 2px 10px; border-radius: var(--radius-pill); font-weight: 700;">Today</span>
+                <a id="export-hourly-forecast-csv" href="/api/forecast/Tokyo/export/hourly/csv" class="export-csv-btn" title="Export Hourly Forecast to CSV">
+                    <i class="fa-solid fa-file-csv"></i> Export CSV
+                </a>
+            </div>
+        </div>
+        <div style="position: relative; height: 185px; width: 100%;">
+            <canvas id="hourly-curve-canvas"></canvas>
+        </div>
+    </div>
+
+    <!-- Column 3: Quick Info -->
+    <div class="dashboard-card-box">
+        <div class="card-header-flex">
+            <span class="card-header-title">
+                <i class="fa-solid fa-circle-info" style="color: var(--blue-primary);"></i> Quick Info
+            </span>
+        </div>
+        <ul class="quick-info-list">
+            <li class="quick-info-item">
+                <div class="quick-info-icon"><i class="fa-solid fa-landmark"></i></div>
+                <div>
+                    <div class="quick-info-label">Capital</div>
+                    <div id="qi-capital" class="quick-info-value">Tokyo</div>
+                </div>
+            </li>
+            <li class="quick-info-item">
+                <div class="quick-info-icon"><i class="fa-solid fa-users"></i></div>
+                <div>
+                    <div class="quick-info-label">Population</div>
+                    <div id="qi-population" class="quick-info-value">37.4 million</div>
+                </div>
+            </li>
+            <li class="quick-info-item">
+                <div class="quick-info-icon"><i class="fa-solid fa-flag"></i></div>
+                <div>
+                    <div class="quick-info-label">Country</div>
+                    <div id="qi-country" class="quick-info-value">Japan</div>
+                </div>
+            </li>
+            <li class="quick-info-item">
+                <div class="quick-info-icon"><i class="fa-solid fa-clock"></i></div>
+                <div>
+                    <div class="quick-info-label">Time Zone</div>
+                    <div id="qi-timezone" class="quick-info-value">JST (UTC+9)</div>
+                </div>
+            </li>
+        </ul>
+        <button id="qi-view-map-btn" class="quick-info-action-btn">
+            <span><i class="fa-solid fa-map-location-dot" style="margin-right: 6px;"></i> View on map</span>
+            <i class="fa-solid fa-angle-right"></i>
+        </button>
     </div>
 </div>
 
-<div id="dashboard-wrapper" class="dashboard-wrapper hidden">
-    <!-- Top Action Bar -->
-    <div class="dashboard-actions">
-        <button id="save-city-btn" class="btn-icon" title="Save City"><i class="fa-regular fa-star"></i></button>
-        <button id="export-csv-btn" class="btn-icon" title="Export CSV"><i class="fa-solid fa-file-csv"></i></button>
-        <button id="export-pdf-btn" class="btn-icon" title="Export PDF Report"><i class="fa-solid fa-file-pdf"></i></button>
+<!-- ============================================================
+     BOTTOM 2-COLUMN GRID (Discover City + AI Weather Briefing)
+     ============================================================ -->
+<div class="dashboard-bottom-row">
+    <!-- Left: Discover City -->
+    <div class="dashboard-card-box">
+        <div class="discover-card-inner">
+            <img id="discover-city-thumb" src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=400&q=80" alt="City Discovery" class="discover-thumb">
+            <div class="discover-content-body">
+                <h3 id="discover-city-title" class="discover-city-title">
+                    <i class="fa-solid fa-book-open" style="color: var(--blue-primary);"></i> Discover Tokyo
+                </h3>
+                <div class="discover-subtitle">A city where tradition meets the future</div>
+                <p id="discover-city-narrative" class="discover-summary-text">
+                    Tokyo, Japan's bustling capital, is a dynamic metropolis known for its unique blend of modern skyscrapers, historic temples, world-class cuisine and vibrant culture. From the iconic Tokyo Tower to the serene Meiji Shrine, the city offers an unforgettable mix of tradition and innovation.
+                </p>
+                <a href="#encyclopedia-wrapper" id="read-guide-link" class="card-action-link">
+                    Read city guide <i class="fa-solid fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
     </div>
 
-    <!-- Main Grid -->
-    <div class="dashboard-grid-modern">
-        
-        <!-- Left Column: Main Weather & Conditions -->
-        <div class="glass card-main-weather">
-            <h2 id="city-name" class="city-title"></h2>
-            <div id="city-subtitle" style="font-size: 1.5rem; font-weight: 500; margin-bottom: 5px;"></div>
-            <div id="city-local-time" class="city-time"></div>
-            
-            <div class="weather-primary" style="display: none;">
-                <img id="weather-icon" class="weather-icon-large" src="" alt="Weather Icon">
-                <div class="temp-display">
-                    <span id="temperature" class="temp-large"></span>
-                    <div id="weather-desc" class="weather-desc-text"></div>
-                </div>
-            </div>
-            
-            <div class="ai-summary-box">
-                <i class="fa-solid fa-robot"></i> <span id="ai-summary-text"></span>
-            </div>
+    <!-- Right: AI Weather Briefing (Powered by Gemini) -->
+    <div class="dashboard-card-box" style="border-left: 4px solid var(--lavender-accent);">
+        <div class="card-header-flex" style="border: none; padding-bottom: 0;">
+            <span class="card-header-title">
+                <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--lavender-accent);"></i> AI Weather Briefing
+            </span>
+            <span class="ai-badge" style="background: var(--lavender-pale); color: var(--lavender-accent); border: 1px solid var(--lavender-soft); padding: 4px 10px; border-radius: var(--radius-pill); font-weight: 700; font-size: 0.8rem;">
+                <i class="fa-solid fa-brain"></i> Powered by Gemini
+            </span>
         </div>
-
-        <!-- Right Column Top: KPI Grid -->
-        <div class="glass card-kpi">
-            <h3><i class="fa-solid fa-gauge"></i> Current Conditions</h3>
-            <div class="kpi-grid-inner">
-                <div class="kpi-item">
-                    <i class="fa-solid fa-temperature-half"></i>
-                    <div class="kpi-val"><strong id="kpi-temperature">--</strong></div>
-                    <div class="kpi-label" id="feels-like-label">Feels Like --</div>
-                </div>
-                <div class="kpi-item">
-                    <i class="fa-solid fa-droplet"></i>
-                    <div class="kpi-val"><strong id="humidity">--</strong></div>
-                    <div class="kpi-label">Humidity</div>
-                </div>
-                <div class="kpi-item">
-                    <i class="fa-solid fa-wind"></i>
-                    <div class="kpi-val"><strong id="wind-speed">--</strong></div>
-                    <div class="kpi-label">Wind</div>
-                </div>
-                <div class="kpi-item">
-                    <i class="fa-regular fa-eye"></i>
-                    <div class="kpi-val"><strong id="visibility">--</strong></div>
-                    <div class="kpi-label">Visibility</div>
-                </div>
-                <div class="kpi-item">
-                    <i class="fa-solid fa-sun" style="color: #f59e0b;"></i>
-                    <div class="kpi-val"><strong id="uv-index">--</strong></div>
-                    <div class="kpi-label" id="uv-label">UV Index</div>
-                </div>
-                <div class="kpi-item">
-                    <i class="fa-solid fa-cloud-rain" style="color: #60a5fa;"></i>
-                    <div class="kpi-val"><strong id="rain-prob">0%</strong></div>
-                    <div class="kpi-label">Chance of Rain (<span id="rain">0 mm</span>)</div>
-                </div>
-                <div class="kpi-item">
-                    <i class="fa-solid fa-gauge-high"></i>
-                    <div class="kpi-val"><strong id="pressure">--</strong></div>
-                    <div class="kpi-label">Pressure</div>
-                </div>
-                <!-- Grounded Comfort Index KPI -->
-                <div class="kpi-item">
-                    <i class="fa-solid fa-face-smile" style="color: #10b981;"></i>
-                    <div class="kpi-val"><strong id="comfort-score-val">--</strong></div>
-                    <div class="kpi-label" id="comfort-score-label">Comfort Score</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Full Width: AI Weather Briefing Card (Gemini Grounded) -->
-        <div class="glass card-ai-briefing" id="card-ai-briefing">
-            <div class="briefing-header">
-                <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <i class="fa-solid fa-sparkles" style="color: var(--accent); font-size: 1.25rem;"></i>
-                    <h3 style="margin: 0; font-size: 1.15rem;">AI Weather Briefing</h3>
-                    <span id="briefing-badge" class="ai-badge"><i class="fa-solid fa-brain"></i> Gemini AI</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 0.8rem;">
-                    <span id="briefing-timestamp" style="font-size: 0.78rem; opacity: 0.75;">Fresh data</span>
-                    <button id="refresh-briefing-btn" class="refresh-briefing-btn" title="Refresh AI Briefing">
-                        <i class="fa-solid fa-arrows-rotate"></i>
-                    </button>
-                </div>
-            </div>
-            <div id="briefing-skeleton" class="skeleton-pulse hidden" style="height: 60px; border-radius: 8px; background: rgba(150,150,150,0.15);"></div>
-            <p id="briefing-text" style="line-height: 1.65; margin: 0; font-size: 0.96rem;">Loading AI weather insights...</p>
-        </div>
-
-        <!-- Full Width: Hourly Timeline -->
-        <div class="glass card-timeline">
-            <h3><i class="fa-regular fa-clock"></i> 24-Hour Forecast</h3>
-            <div id="timeline-container" class="timeline-container">
-                <!-- Injected via JS -->
-            </div>
-        </div>
-
-        <!-- Details Row -->
-        <div class="glass card-aqi">
-            <h3><i class="fa-solid fa-leaf"></i> Air Quality</h3>
-            <div class="aqi-display">
-                <div id="aqi-value" class="aqi-val-large">--</div>
-                <div id="aqi-label" class="aqi-badge">--</div>
-            </div>
-            <div id="aqi-main-pollutant" style="margin-top: 10px; font-size: 0.9rem; color: var(--text-secondary); text-align: center;">Main Pollutant: --</div>
-        </div>
-
-        <div class="glass card-sun">
-            <h3><i class="fa-solid fa-sun"></i> Sun & Moon</h3>
-            <div class="sun-grid">
-                <div class="sun-item">
-                    <i class="fa-solid fa-sunrise"></i>
-                    <div>Sunrise</div>
-                    <strong id="sunrise-time">--</strong>
-                </div>
-                <div class="sun-item">
-                    <i class="fa-solid fa-sunset"></i>
-                    <div>Sunset</div>
-                    <strong id="sunset-time">--</strong>
-                </div>
-            </div>
-        </div>
-
-        <div class="glass card-info">
-            <h3><i class="fa-solid fa-circle-info"></i> City Info</h3>
-            <ul class="city-info-list">
-                <li><span>Country:</span> <strong id="info-country">--</strong></li>
-                <li><span>Timezone:</span> <strong id="info-tz">--</strong></li>
-                <li><span>Coordinates:</span> <strong id="info-coords">--</strong></li>
-            </ul>
-        </div>
-
-        <!-- Weather Insights Panel -->
-        <div class="glass card-insights">
-            <h3><i class="fa-solid fa-lightbulb" style="color: var(--accent);"></i> Weather Insights</h3>
-            <ul id="weather-insights-list" style="list-style: none; padding-left: 0; margin-top: 1rem; display: flex; flex-direction: column; gap: 0.8rem; flex: 1; justify-content: space-around;">
-                <!-- Injected via JS -->
-            </ul>
-        </div>
-
-        <!-- Full Width: 5-Day Forecast & Map -->
-        <div class="glass card-forecast">
-            <h3><i class="fa-regular fa-calendar-days"></i> 5-Day Forecast</h3>
-            <div class="forecast-container-vertical" id="forecast-container">
-                <!-- Injected via JS -->
-            </div>
-        </div>
-
-        <div class="glass card-map">
-            <h3><i class="fa-solid fa-map"></i> Weather Map</h3>
-            <div id="map" class="map-container"></div>
+        <p id="briefing-text" class="discover-summary-text" style="font-size: 0.96rem; line-height: 1.7; margin: 1rem 0;">
+            Good afternoon! Tokyo is experiencing partly cloudy conditions with a temperature of 22°C. The next few days look pleasant, with sunny weather on Sunday and a chance of light rain on Monday. Perfect weather for exploring the city!
+        </p>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 0.75rem;">
+            <a href="#forecast-container" class="card-action-link">
+                Get detailed forecast <i class="fa-solid fa-arrow-right"></i>
+            </a>
+            <span id="briefing-timestamp" style="font-size: 0.78rem; color: var(--text-secondary);">Grounded Observation</span>
         </div>
     </div>
 </div>
 
-<!-- Saved Cities Shelf -->
-<div class="dashboard-shelves">
-    <div id="saved-cities-container" class="glass hidden shelf-container">
-        <h3><i class="fa-solid fa-star" style="color: var(--accent);"></i> Favorite Cities</h3>
-        <div id="saved-cities-shelf" class="shelf-scroll"></div>
-    </div>
-</div>
+<!-- ============================================================
+     GOOGLE / MUNICIPAL CITY ENCYCLOPEDIA (4,000+ Words Target)
+     ============================================================ -->
+<section id="encyclopedia-wrapper" class="encyclopedia-wrapper hidden">
+    <div class="encyclopedia-card">
+        <div class="encyclopedia-header">
+            <div class="encyclopedia-title-row">
+                <div>
+                    <h2 id="encyclopedia-city-title" class="encyclopedia-title">City Encyclopedia</h2>
+                    <p id="encyclopedia-subtitle" style="color: var(--text-secondary); margin-top: 0.35rem; font-weight: 600;">Comprehensive Meteorological, Geographical, Historical & Urban Monograph</p>
+                </div>
+                <div class="encyclopedia-badges">
+                    <span id="badge-word-count" class="badge-wordcount"><i class="fa-solid fa-file-lines"></i> <strong>4,120 Words</strong></span>
+                    <span id="badge-reading-time" class="badge-reading-time"><i class="fa-solid fa-clock"></i> <strong>17 min read</strong></span>
+                    <span class="badge-source"><i class="fa-brands fa-google"></i> Grounded Discovery Engine</span>
+                </div>
+            </div>
+            <p id="encyclopedia-lead-paragraph" class="encyclopedia-summary-lead"></p>
+        </div>
 
-<!-- Settings Modal -->
-<div id="settings-modal" class="modal hidden">
-    <div class="modal-content glass">
-        <span class="close-btn">&times;</span>
-        <h2>Settings</h2>
-        <div class="settings-group">
-            <label>Temperature Unit</label>
-            <select id="setting-temp-unit">
-                <option value="C">Celsius (°C)</option>
-                <option value="F">Fahrenheit (°F)</option>
-            </select>
+        <div class="encyclopedia-layout">
+            <aside class="encyclopedia-toc">
+                <h4><i class="fa-solid fa-list-ol"></i> Table of Contents</h4>
+                <ul id="toc-list" class="toc-list">
+                    <!-- Populated dynamically via script.js -->
+                </ul>
+            </aside>
+            <article id="encyclopedia-article-body" class="encyclopedia-article">
+                <!-- 38 Structured Monograph Sections Populated dynamically via script.js -->
+            </article>
         </div>
-        <div class="settings-group">
-            <label>Wind Speed Unit</label>
-            <select id="setting-wind-unit">
-                <option value="ms">m/s</option>
-                <option value="kmh">km/h</option>
-                <option value="mph">mph</option>
-            </select>
+    </div>
+</section>
+
+<!-- Regional Map Modal (View on Map) -->
+<div id="map-modal" class="modal hidden">
+    <div class="modal-content glass" style="max-width: 800px; width: 90%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="margin: 0; color: var(--text-heading);"><i class="fa-solid fa-map-location-dot" style="color: var(--blue-primary); margin-right: 6px;"></i> Regional Meteorological Radar</h3>
+            <span id="close-map-modal" style="cursor: pointer; font-size: 1.5rem; color: var(--text-secondary);">&times;</span>
         </div>
-        <button id="save-settings-btn" class="auth-btn mt-4">Save Settings</button>
+        <div id="map" style="height: 400px; width: 100%; border-radius: var(--radius-md);"></div>
     </div>
 </div>
 
 <!-- Floating AI Weather Chat Button & Panel -->
-<button id="chat-widget-toggle" class="chat-toggle-btn glass" title="Chat with ClimaSense AI">
+<button id="chat-widget-toggle" class="chat-toggle-btn" title="Chat with ClimaSense AI">
     <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Ask AI</span>
 </button>
 
-<div id="chat-panel" class="chat-panel glass hidden">
+<div id="chat-panel" class="chat-panel hidden">
     <div class="chat-header">
-        <div style="display:flex; align-items:center; gap:0.5rem;">
-            <i class="fa-solid fa-robot" style="color:var(--accent);"></i>
-            <strong>ClimaSense AI Assistant</strong>
+        <div style="display:flex; align-items:center; gap:0.6rem;">
+            <i class="fa-solid fa-brain" style="color:var(--lavender-accent); font-size:1.25rem;"></i>
+            <strong style="color:var(--text-heading);">ClimaSense Intelligence</strong>
         </div>
-        <button id="close-chat-btn" style="background:none; border:none; color:var(--text-primary); font-size:1.2rem; cursor:pointer;">&times;</button>
+        <button id="close-chat-btn" style="background:none; border:none; color:var(--text-secondary); font-size:1.3rem; cursor:pointer;">&times;</button>
     </div>
     
     <div class="chat-chips-container">
         <span class="chat-chip" data-question="Should I carry an umbrella today?">☔ Umbrella?</span>
         <span class="chat-chip" data-question="What is the best time to dry clothes?">👕 Dry clothes</span>
-        <span class="chat-chip" data-question="Is this a good time for outdoor exercise?">🏃 Exercise?</span>
+        <span class="chat-chip" data-question="Is this a good time for outdoor workout?">🏃 Exercise?</span>
         <span class="chat-chip" data-question="What should I wear today?">🧥 What to wear</span>
     </div>
     
     <div id="chat-body" class="chat-body">
         <div class="chat-bubble ai">
-            👋 Hello! I am your ClimaSense AI Assistant. Ask me anything grounded in real-time weather, travel forecasts, clothing advice, or comparisons!
+            👋 Hello! I am your ClimaSense Intelligence assistant. Ask me anything grounded in real-time weather, travel advice, or city meteorological analysis!
         </div>
     </div>
     
     <div class="chat-input-row">
-        <input type="text" id="chat-input" placeholder="Ask about current weather or tips..." maxlength="300" autocomplete="off">
+        <input type="text" id="chat-input" placeholder="Ask about current weather, clothing, or planning..." maxlength="300" autocomplete="off">
         <button id="chat-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
     </div>
 </div>
 
 <!-- Unsplash Dynamic Photography Attribution -->
-<div id="photo-attribution" class="photo-attribution glass">
+<div id="photo-attribution" class="photo-attribution">
     <i class="fa-solid fa-camera"></i> Background via <a id="unsplash-link" href="https://unsplash.com/?utm_source=ClimaSense&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/geolocation.js', v=2) }}"></script>
-<script src="{{ url_for('static', filename='js/map.js', v=2) }}"></script>
+<script src="{{ url_for('static', filename='js/geolocation.js', v=4) }}"></script>
+<script src="{{ url_for('static', filename='js/map.js', v=4) }}"></script>
 {% endblock %}

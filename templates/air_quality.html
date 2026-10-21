@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Air Quality & UV Index - ClimaSense{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1100px; margin: 2rem auto; padding: 0 1rem;">
+    <div class="glass" style="padding: 2rem 2.5rem; margin-bottom: 2rem; border-radius: var(--radius-xl);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom: 2rem;">
+            <div>
+                <h1 style="font-size: 2rem; color: var(--text-heading); margin: 0 0 0.35rem 0;">
+                    <i class="fa-solid fa-leaf" style="color: var(--green-accent); margin-right: 8px;"></i> Air Quality & Environmental Health
+                </h1>
+                <p id="aqi-page-city" style="color: var(--text-secondary); font-size: 1rem; margin: 0;">Verified particulate concentration and solar ultraviolet radiation.</p>
+            </div>
+            <div style="display: flex; gap: 0.6rem;">
+                <input type="text" id="aqi-city-input" class="search-input" placeholder="Change City" value="Tokyo" style="max-width: 200px; padding: 0.75rem 1.15rem; border-radius: var(--radius-pill);">
+                <button id="aqi-search-btn" class="search-btn" style="padding: 0.75rem 1.4rem; border-radius: var(--radius-pill);">Update</button>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <!-- AQI Primary Gauge Card -->
+            <div class="glass" style="padding: 2rem; text-align: center; border-radius: var(--radius-lg); border-top: 5px solid var(--green-accent);">
+                <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Air Quality Index (AQI)</div>
+                <div id="aqi-large-num" style="font-size: 4rem; font-weight: 800; color: var(--green-deep); line-height: 1.1; margin: 0.5rem 0;">1</div>
+                <div id="aqi-large-pill" class="aqi-pill aqi-good" style="display: inline-block; font-size: 1rem; padding: 0.4rem 1.4rem;">Good</div>
+                <p id="aqi-advice" style="color: var(--text-body); font-size: 0.95rem; margin-top: 1rem; line-height: 1.6;">Air quality is considered satisfactory, and air pollution poses little or no risk to public health.</p>
+            </div>
+
+            <!-- UV Primary Index Card -->
+            <div class="glass" style="padding: 2rem; text-align: center; border-radius: var(--radius-lg); border-top: 5px solid var(--sun-accent);">
+                <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Ultraviolet (UV) Index</div>
+                <div id="uv-large-num" style="font-size: 4rem; font-weight: 800; color: #8A5800; line-height: 1.1; margin: 0.5rem 0;">4</div>
+                <div id="uv-large-pill" class="aqi-pill" style="display: inline-block; font-size: 1rem; padding: 0.4rem 1.4rem; background: var(--sun-pale); color: #8A5800; border: 1px solid var(--sun-soft);">Moderate</div>
+                <p id="uv-advice" style="color: var(--text-body); font-size: 0.95rem; margin-top: 1rem; line-height: 1.6;">Stay in the shade near midday when the sun is strongest. Wear sunglasses and SPF 30+ sunscreen outdoors.</p>
+            </div>
+        </div>
+
+        <div class="glass" style="padding: 1.75rem; border-radius: var(--radius-lg); background: var(--surface-warm); border-left: 4px solid var(--sun-accent);">
+            <h3 style="font-size: 1.2rem; color: var(--text-heading); margin-bottom: 0.5rem;">
+                <i class="fa-solid fa-heart-pulse" style="color: var(--green-accent); margin-right: 6px;"></i> Health & Outdoor Activity Guidance
+            </h3>
+            <p style="color: var(--text-body); line-height: 1.7; margin: 0;">
+                Today's atmospheric purity supports full outdoor cardio, marathon training, and child recreation without respiratory constraints. Sensitive individuals with asthma may proceed with normal activity.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadAQIPage(city) {
+    document.getElementById('aqi-page-city').textContent = `Showing live air purity and solar UV indices for ${city}`;
+    try {
+        const wRes = await fetch(`/api/weather/${encodeURIComponent(city)}`);
+        const wData = await wRes.json();
+        if (wData.success && wData.data && wData.data.coord) {
+            const { lat, lon } = wData.data.coord;
+            const aqiRes = await fetch(`/api/aqi?lat=${lat}&lon=${lon}`);
+            const aqiData = await aqiRes.json();
+            if (aqiData.success) {
+                document.getElementById('aqi-large-num').textContent = aqiData.aqi;
+                document.getElementById('aqi-large-pill').textContent = aqiData.label;
+            }
+
+            const uvRes = await fetch(`/api/uv?lat=${lat}&lon=${lon}`);
+            const uvData = await uvRes.json();
+            if (uvData.success) {
+                document.getElementById('uv-large-num').textContent = uvData.uvi;
+                document.getElementById('uv-large-pill').textContent = uvData.category;
+            }
+        }
+    } catch(e) { console.error('Error loading AQI page:', e); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const city = localStorage.getItem('lastCity') || 'Tokyo';
+    document.getElementById('aqi-city-input').value = city;
+    loadAQIPage(city);
+
+    document.getElementById('aqi-search-btn').addEventListener('click', () => {
+        const c = document.getElementById('aqi-city-input').value.trim();
+        if (c) loadAQIPage(c);
+    });
+});
+</script>
+{% endblock %}

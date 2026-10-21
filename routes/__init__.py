@@ -7,6 +7,8 @@ from .history import history_bp
 from .alerts import alerts_bp
 from .trends import trends_bp
 from .about import about_bp
+from .health import health_bp
+from .admin import admin_bp
 
 def register_blueprints(app):
     app.register_blueprint(auth_bp)
@@ -18,3 +20,5 @@ def register_blueprints(app):
     app.register_blueprint(alerts_bp)
     app.register_blueprint(trends_bp)
     app.register_blueprint(about_bp)
+    app.register_blueprint(health_bp)
+    app.register_blueprint(admin_bp)

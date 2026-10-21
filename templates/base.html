@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ClimaSense{% endblock %}</title>
     
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts: Inter & Open Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,58 +14,49 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 
-    <!-- App CSS -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=2) }}">
+    <!-- App CSS (Light Mode Design System) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v=3) }}">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     
     {% block extra_css %}{% endblock %}
 </head>
-<body class="dark-theme" data-auth="{{ 'true' if current_user.is_authenticated else 'false' }}"> <!-- Default to dark, overridden by JS -->
+<body class="light-theme" data-auth="{{ 'true' if current_user.is_authenticated else 'false' }}">
 
     <div class="bg-image" id="bg-image"></div>
     <div class="bg-overlay"></div>
 
     <nav class="navbar">
-        <a href="{{ url_for('weather.index') }}" class="nav-brand">
-            <i class="fa-solid fa-cloud-sun"></i> ClimaSense
+        <a href="{{ url_for('weather.home') }}" class="nav-brand-group">
+            <i class="fa-solid fa-cloud-sun nav-brand-logo"></i>
+            <span class="nav-brand-name">ClimaSense</span>
         </a>
         
-        {% if current_user.is_authenticated %}
         <ul class="nav-menu">
-            <li class="nav-item"><a href="{{ url_for('weather.index') }}">Home</a></li>
-            <li class="nav-item"><a href="{{ url_for('history.history') }}">History</a></li>
-            <li class="nav-item"><a href="{{ url_for('predictions.predictions') }}">Predictions</a></li>
-            <li class="nav-item"><a href="{{ url_for('trends.trends') }}">Trends</a></li>
-            <li>
-                <div class="notification-container" style="position:relative; cursor:pointer;" onclick="document.getElementById('notif-dropdown').classList.toggle('hidden')">
-                    <i class="fa-solid fa-bell" style="font-size:1.2rem;"></i>
-                    <span id="notif-badge" class="notif-badge hidden">0</span>
-                    <div id="notif-dropdown" class="notif-dropdown hidden glass">
-                        <div class="notif-header">Notifications</div>
-                        <ul id="notif-list">
-                            <li class="notif-empty">No new alerts</li>
-                        </ul>
-                    </div>
-                </div>
-            </li>
-            <li>
-                <button class="theme-toggle-btn" id="theme-toggle">
-                    <i class="fa-solid fa-moon"></i>
-                </button>
-            </li>
-            <li>
-                <button class="unit-toggle-btn" id="unit-toggle">°C</button>
-            </li>
-            <li>
-                <button class="theme-toggle-btn" id="status-toggle" title="System Status">
-                    <i class="fa-solid fa-heart-pulse" style="color: #10b981;"></i>
-                </button>
-            </li>
-            <li>
-                <a href="{{ url_for('auth.logout') }}" class="logout-btn">Logout</a>
-            </li>
+            <li class="nav-item"><a href="{{ url_for('weather.home') }}" class="nav-link {% if request.endpoint == 'weather.home' %}active{% endif %}">Home</a></li>
+            <li class="nav-item"><a href="{{ url_for('weather.index') }}" class="nav-link {% if request.endpoint == 'weather.index' %}active{% endif %}">Weather</a></li>
+            <li class="nav-item"><a href="{{ url_for('weather.explore') }}" class="nav-link {% if request.endpoint == 'weather.explore' %}active{% endif %}">Explore Cities</a></li>
+            <li class="nav-item"><a href="{{ url_for('weather.home') }}#globe-map-section" class="nav-link">Map</a></li>
+            <li class="nav-item"><a href="{{ url_for('predictions.predictions') }}" class="nav-link">Climate</a></li>
+            <li class="nav-item"><a href="{{ url_for('about.about') }}" class="nav-link">About</a></li>
         </ul>
-        {% endif %}
+
+        <div class="nav-right-actions">
+            <button id="theme-toggle-btn" class="nav-icon-btn" title="Light theme mode">
+                <i class="fa-regular fa-sun" style="color: var(--sun-accent); font-size: 1.15rem;"></i>
+            </button>
+            <button class="unit-toggle-btn" id="unit-toggle" style="padding: 0.35rem 0.75rem; font-size:0.85rem;">°C</button>
+            
+            {% if current_user.is_authenticated %}
+            <a href="{{ url_for('auth.profile') }}" class="nav-profile-avatar" title="{{ current_user.username }}">
+                <i class="fa-solid fa-user"></i>
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="nav-link" title="Sign Out" style="padding: 0.35rem 0.6rem; color: var(--text-secondary);">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            </a>
+            {% else %}
+            <a href="{{ url_for('auth.show_login') }}" class="nav-signin-pill">Sign In</a>
+            {% endif %}
+        </div>
     </nav>
 
     <main>
@@ -76,9 +67,9 @@
     <div id="status-modal" class="modal hidden">
         <div class="modal-content glass" style="max-width: 650px;">
             <span class="close-btn" id="close-status-modal">&times;</span>
-            <h2><i class="fa-solid fa-heart-pulse" style="color: #10b981;"></i> System Operational Status</h2>
-            <p style="font-size: 0.85rem; color: #adb5bd; margin-bottom: 1rem;">
-                <i class="fa-solid fa-shield-halved" style="color: #60a5fa;"></i> <strong>Security Policy Enabled:</strong> Sensitive API keys are protected server-side and should not be shown.
+            <h2><i class="fa-solid fa-heart-pulse" style="color: var(--green-accent);"></i> System Operational Status</h2>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                <i class="fa-solid fa-shield-halved" style="color: var(--blue-primary);"></i> <strong>Security Policy Active:</strong> Sensitive API keys are protected server-side and never exposed.
             </p>
             <div id="status-cards-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <!-- Populated via JS -->
@@ -100,7 +91,8 @@
     
     <!-- App JS Base -->
     <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/script.js', v=2) }}"></script>
+    <script src="{{ url_for('static', filename='js/weather3d.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/script.js', v=3) }}"></script>
     <script src="{{ url_for('static', filename='js/sockets.js') }}"></script>
     
     {% block scripts %}{% endblock %}

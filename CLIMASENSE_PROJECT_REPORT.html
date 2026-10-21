@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ClimaSense - Comprehensive Project Report</title>
+<style>
+    @page {
+        size: A4;
+        margin: 20mm;
+    }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        color: #20364B;
+        background: #FFFFFF;
+        font-size: 11pt;
+        margin: 0;
+        padding: 0;
+    }
+    h1 {
+        color: #1A365D;
+        font-size: 24pt;
+        border-bottom: 3px solid #3185D6;
+        padding-bottom: 8px;
+        margin-top: 0;
+    }
+    h2 {
+        color: #3185D6;
+        font-size: 15pt;
+        margin-top: 18pt;
+        margin-bottom: 6pt;
+        border-bottom: 1px solid #DDEAF3;
+        padding-bottom: 4px;
+        page-break-after: avoid;
+    }
+    h3 {
+        color: #24527A;
+        font-size: 13pt;
+        margin-top: 14pt;
+        margin-bottom: 4pt;
+        page-break-after: avoid;
+    }
+    p {
+        margin: 6pt 0;
+        color: #40566B;
+    }
+    ul, ol {
+        margin: 4pt 0 10pt 20pt;
+        color: #40566B;
+    }
+    li {
+        margin-bottom: 3pt;
+    }
+    code {
+        font-family: Consolas, "Courier New", monospace;
+        background: #F0F8FF;
+        color: #24527A;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-size: 9.5pt;
+        border: 1px solid #DDEAF3;
+    }
+    pre {
+        background: #F7FBFF;
+        border: 1px solid #DDEAF3;
+        border-radius: 6px;
+        padding: 10pt;
+        overflow-x: auto;
+        font-size: 9pt;
+        line-height: 1.4;
+        page-break-inside: avoid;
+    }
+    pre code {
+        background: transparent;
+        padding: 0;
+        border: none;
+    }
+    hr {
+        border: none;
+        border-top: 1px solid #DDEAF3;
+        margin: 16pt 0;
+    }
+    strong {
+        color: #20364B;
+    }
+</style>
+</head>
+<body>
+<h1>ClimaSense — Comprehensive Meteorological Intelligence & City Discovery Platform</h1>
+<h2>Final Project Engineering & Architectural Report</h2>
+
+<hr>
+
+<h3>1. Project Title</h3>
+<p><strong>ClimaSense — AI-Powered Weather Intelligence, City Discovery Platform & Real-Time Meteorological Monograph System</strong></p>
+
+<hr>
+
+<h3>2. Executive Summary</h3>
+<p>ClimaSense is an enterprise-grade weather intelligence and geographic discovery web application developed using Python 3, Flask, SQLite/PostgreSQL, Redis, and Leaflet.js. The platform integrates real-time observational meteorological telemetry from OpenWeatherMap, dynamic high-resolution urban photography from Unsplash, grounded conversational intelligence from Google Gemini AI, and comprehensive 38-section municipal monographs with live word count tracking. Designed under a strict light-only pastel visual design system, the application delivers current weather metrics, 24-hour hourly spline curve projections, 7-day daily forecasts, side-by-side multi-city comparisons, multi-pollutant air quality health diagnostics, interactive geographical mappings, and CSV exports sanitised against formula injection.</p>
+
+<hr>
+
+<h3>3. Introduction</h3>
+<p>Standard weather portals often present isolated numeric values (temperatures, pressure figures, humidity percentages) without providing actionable human context or environmental narrative. ClimaSense bridges meteorological science and end-user decision making by combining real-time observations with grounded AI briefings, dynamic scenic context, and structured municipal encyclopedias.</p>
+
+<hr>
+
+<h3>4. Problem Statement</h3>
+<ol>
+<li><strong>Raw Numerical Overload:</strong> Typical meteorological dashboards present disconnected metrics without actionable guidance on clothing, travel, or outdoor activities.</li>
+<li><strong>Visual Clutter & Dark Themes:</strong> Many weather dashboards use high-contrast dark modes or generic stock graphics that detract from readability and municipal identity.</li>
+<li><strong>Data Hallucination Risks:</strong> Generative AI tools often fabricate weather values if disconnected from real-time meteorological sensor feeds.</li>
+<li><strong>Data Portability Gaps:</strong> Users frequently lack simple, secure mechanisms to export genuine observed readings and forecasts to standard spreadsheet formats without risk of formula injection.</li>
+<li><strong>Incomplete Municipal Context:</strong> Weather is intrinsically tied to geographic, demographic, and climate-historical contexts that are absent from conventional forecast widgets.</li>
+</ol>
+
+<hr>
+
+<h3>5. Objectives</h3>
+<ul>
+<li>Engineer a unified, responsive light-only web application adhering strictly to low-saturation pastel aesthetics (<code>#F7FBFF</code> base, <code>#FFFFFF</code> cards, <code>#3185D6</code> brand blue).</li>
+<li>Provide real-time meteorological data feeds for global cities with sub-second response times and Redis/in-memory caching.</li>
+<li>Ground Google Gemini AI assistance in verified meteorological readings to eliminate hallucinations.</li>
+<li>Supply genuine CSV data exports for current conditions, hourly timelines, weekly forecasts, city comparisons, and user search history.</li>
+<li>Implement municipal monographs targeting 4,000+ words across 38 distinct urban and meteorological topics.</li>
+<li>Maintain 100% automated test suite coverage with zero regressions.</li>
+</ul>
+
+<hr>
+
+<h3>6. Scope and Intended Users</h3>
+<ul>
+<li><strong>Commuters & Travelers:</strong> Checking real-time conditions, precipitation risk, and clothing advice.</li>
+<li><strong>Meteorology Students & Researchers:</strong> Exporting authentic hourly and weekly telemetry to CSV for empirical analysis.</li>
+<li><strong>Urban Explorers & Tourists:</strong> Discovering international cities with scenic photography and geographical encyclopedias.</li>
+<li><strong>Sensitive Respiratory Demographics:</strong> Monitoring air quality index (AQI) values and pollutant breakdowns (PM2.5, PM10, O3, NO2).</li>
+</ul>
+
+<hr>
+
+<h3>7. Existing System Limitations (Verified During Initial Audit)</h3>
+<ul>
+<li><strong>Syntax Error in script.js:</strong> A duplicated closing bracket previously prevented JavaScript execution, causing search, autocomplete, and briefings to fail. (<em>Fixed</em>)</li>
+<li><strong>Deprecated Gemini Model Identifier:</strong> Legacy code referenced <code>gemini-1.5-flash</code>, which has been superseded. (<em>Fixed & upgraded to configurable model</em>)</li>
+<li><strong>API Key Leakage in Error Logs:</strong> Exceptions previously logged full URLs with embedded keys. (<em>Fixed; keys now pass via <code>x-goog-api-key</code> headers</em>)</li>
+<li><strong>City Extraction Ambiguity in Chat:</strong> City parsing previously mistook query stop-words for city names. (<em>Fixed with regex whole-word boundaries</em>)</li>
+<li><strong>Dark Theme Contamination:</strong> Dark panels previously disrupted visual consistency. (<em>Fixed; 100% light pastel theme enforced</em>)</li>
+</ul>
+
+<hr>
+
+<h3>8. Actual Technology Stack</h3>
+<ul>
+<li><strong>Backend Framework:</strong> Python 3.8+ / Flask 3.0+</li>
+<li><strong>Architecture Pattern:</strong> Application Factory (<code>app.py</code>), Modular Blueprints (<code>routes/</code>)</li>
+<li><strong>Database & ORM:</strong> SQLAlchemy with SQLite (<code>instance/app.db</code>) / PostgreSQL support</li>
+<li><strong>Session & Auth Management:</strong> Flask-Login with bcrypt password hashing</li>
+<li><strong>Cache & Message Broker:</strong> Redis with transparent in-memory dictionary fallback</li>
+<li><strong>Real-Time WebSockets:</strong> Flask-SocketIO (for live city discussion rooms)</li>
+<li><strong>Frontend Stack:</strong> Semantic HTML5, CSS3 Custom Properties (CSS variables), Vanilla JavaScript (ES6+)</li>
+<li><strong>Visualizations:</strong> Chart.js (spline curves and historical charts), Leaflet.js (interactive maps)</li>
+<li><strong>External APIs:</strong> OpenWeatherMap API, Unsplash Scenery API, Google Gemini AI API</li>
+</ul>
+
+<hr>
+
+<h3>9. System Architecture</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────┐
+<p>│                       Client Browser                        │</p>
+<p>│  Light Pastel UI • CSS 3D Transforms • Leaflet • Chart.js   │</p>
+<p>└──────────────────────────────▲──────────────────────────────┘</p>
+<p>                               │ HTTP / JSON / SSE / WS</p>
+<p>┌──────────────────────────────▼──────────────────────────────┐</p>
+<p>│                    Flask Application Core                   │</p>
+<p>│   Auth • CSRF • Rate Limiter • Blueprints • Error Handlers  │</p>
+<p>└──────────┬───────────────────┬───────────────────┬──────────┘</p>
+<p>           │                   │                   │</p>
+<p>    ┌──────▼──────┐     ┌──────▼──────┐     ┌──────▼──────┐</p>
+<p>    │ OpenWeather │     │   Unsplash  │     │Google Gemini│</p>
+<p>    │  Telemetry  │     │ City Photos │     │  AI Engine  │</p>
+<p>    └─────────────┘     └─────────────┘     └─────────────┘</p>
+<p>           │                   │                   │</p>
+<p>    ┌──────▼───────────────────▼───────────────────▼──────────┐</p>
+<p>    │          Caching Layer (Redis / Memory Cache)           │</p>
+<p>    └──────────────────────────┬──────────────────────────────┘</p>
+<p>                               │</p>
+<p>    ┌──────────────────────────▼──────────────────────────────┐</p>
+<p>    │              Relational Database (SQLite)               │</p>
+<p>    │         Users • SavedCities • SearchHistory             │</p>
+<p>    └─────────────────────────────────────────────────────────┘</p>
+<p></code></pre></p>
+
+<hr>
+
+<h3>10. Frontend and Backend Architecture</h3>
+<ul>
+<li><strong>Frontend Organization:</strong></li>
+<li>Layout template: <code>templates/base.html</code> defines navbar, search pill, toasts, and script imports.</li>
+<li>Page templates: 21 modular templates covering dashboard, exploration, auth, comparison, air quality, alerts, profile, settings, and legal terms.</li>
+<li>Shared styling: <code>static/css/style.css</code> contains the design tokens, layout grids, cards, and animations.</li>
+<li>3D Atmosphere: <code>static/js/weather3d.js</code> renders CSS 3D sun/cloud celestial scenes based on live weather condition codes.</li>
+<li><strong>Backend Organization:</strong></li>
+<li><code>routes/auth.py</code>: Authentication, registration, password recovery, profile management.</li>
+<li><code>routes/weather.py</code>: Current conditions, comparison, map endpoints, and municipal monographs.</li>
+<li><code>routes/forecast.py</code>: 5-day / 3-hour forecasts, hourly curves, and weekly aggregations.</li>
+<li><code>routes/history.py</code>: Search history telemetry and CSV exports.</li>
+</ul>
+
+<hr>
+
+<h3>11. Actual Pages and Navigation</h3>
+<ol>
+<li><strong>Sign In (<code>/login</code>):</strong> Split decorative card explaining core features with instant demo login.</li>
+<li><strong>Sign Up (<code>/signup</code>):</strong> Account creation with real-time password strength meter.</li>
+<li><strong>Password Recovery (<code>/forgot-password</code>):</strong> Verified password reset flow.</li>
+<li><strong>Home / Dashboard (<code>/</code>):</strong> Panoramic city hero, floating card, 3D atmospheric container, 3-column data grid, bottom discovery row, and 38-section municipal monograph.</li>
+<li><strong>Explore Global Cities (<code>/explore</code>):</strong> Interactive destination explorer with continent filters.</li>
+<li><strong>Saved Cities Shelf (<code>/#saved-cities-container</code>):</strong> Bookmark shelf with live temperature tags.</li>
+<li><strong>City Comparison (<code>/compare</code>):</strong> Direct side-by-side metric comparison and comfort scores.</li>
+<li><strong>Hourly Forecast (<code>/forecast/hourly</code>):</strong> 24-hour timeline and Chart.js spline curve.</li>
+<li><strong>Weekly Forecast (<code>/forecast/weekly</code>):</strong> 7-day daily outlook with high/low temperature spreads.</li>
+<li><strong>Air Quality & Health (<code>/air-quality</code>):</strong> Multi-pollutant analysis (PM2.5, PM10) and WHO risk ratings.</li>
+<li><strong>Weather Alerts (<code>/alerts</code>):</strong> Active meteorological advisories and warnings.</li>
+<li><strong>Search History (<code>/history</code>):</strong> User search logs with repeat-search shortcuts and CSV export.</li>
+<li><strong>User Profile (<code>/profile</code>):</strong> Account information and security password updates.</li>
+<li><strong>Settings (<code>/settings</code>):</strong> Unit switches (°C/°F, km/h, mph, m/s) and visual preference toggles.</li>
+<li><strong>Help Center & FAQ (<code>/help</code>):</strong> Comprehensive user guides and PWA installation tips.</li>
+<li><strong>Privacy Policy (<code>/privacy</code>):</strong> Privacy practices and API security guarantees.</li>
+<li><strong>Terms of Service (<code>/terms</code>):</strong> Terms of usage and disclaimers.</li>
+</ol>
+
+<hr>
+
+<h3>12. Actual Routes, Services, and Components</h3>
+<ul>
+<li><code>GET /</code> — Primary Weather Dashboard</li>
+<li><code>POST /login</code>, <code>POST /login/demo</code>, <code>GET /logout</code> — Authentication endpoints</li>
+<li><code>GET /api/weather/<city></code> — Current meteorological observation JSON</li>
+<li><code>GET /api/forecast/<city></code> — 5-day / 3-hour forecast progression</li>
+<li><code>GET /api/background/<city></code> — Unsplash city photograph resolver</li>
+<li><code>GET /api/encyclopedia/<city></code> — 38-section municipal monograph engine</li>
+<li><code>POST /api/weather/chat</code> — Grounded Gemini AI conversational assistant</li>
+<li><code>GET /api/weather/<city>/export/csv</code> — Current weather CSV export</li>
+<li><code>GET /api/forecast/<city>/export/hourly/csv</code> — Hourly forecast CSV export</li>
+<li><code>GET /api/forecast/<city>/export/weekly/csv</code> — Weekly forecast CSV export</li>
+<li><code>GET /api/compare/export/csv</code> — City comparison CSV export</li>
+<li><code>GET /api/history/export/csv</code> — Search history CSV export</li>
+</ul>
+
+<hr>
+
+<h3>13. Weather API Integration</h3>
+<ul>
+<li><strong>Provider:</strong> OpenWeatherMap API v2.5 (<code>weather</code> and <code>forecast</code> endpoints).</li>
+<li><strong>Extracted Fields:</strong> City, country code, coordinates, temperature, feels-like temperature, humidity, atmospheric pressure, wind speed, wind direction degrees, visibility, cloud cover, sunrise/sunset UTC timestamps.</li>
+<li><strong>Failure Handling:</strong> Returns HTTP 404 with friendly user message on invalid city queries; transparent fallback to in-memory cached responses during connectivity interruptions.</li>
+</ul>
+
+<hr>
+
+<h3>14. Unsplash Scenery Integration</h3>
+<ul>
+<li><strong>Provider:</strong> Unsplash API (<code>https://api.unsplash.com/search/photos</code>).</li>
+<li><strong>Functionality:</strong> Queries city-specific landscape photography. Sets panoramic background image on the hero section and thumbnail on the Discover card.</li>
+<li><strong>Attribution Compliance:</strong> Renders photographer name with verified referral link to Unsplash (<code>utm_source=ClimaSense</code>).</li>
+<li><strong>Security:</strong> Access key remains entirely on the server; never exposed to frontend bundles.</li>
+</ul>
+
+<hr>
+
+<h3>15. Gemini AI Integration</h3>
+<ul>
+<li><strong>Provider:</strong> Google Gemini API (<code>v1beta/models/{model}:generateContent</code>).</li>
+<li><strong>Grounded Architecture:</strong> Meteorological values are formatted into structured JSON before being passed to Gemini. The model is instructed to formulate practical advice (umbrella usage, clothing, workout windows) strictly from the provided data.</li>
+<li><strong>Log Security:</strong> Keys are passed via <code>x-goog-api-key</code> HTTP header. Raw network errors are sanitised before logging to prevent key leakage.</li>
+</ul>
+
+<hr>
+
+<h3>16. City Encyclopedia & Monograph Implementation</h3>
+<ul>
+<li><strong>Architecture:</strong> <code>services/encyclopedia_service.py</code> provides an authoritative municipal database generating 38 structured sections per city.</li>
+<li><strong>Sections Covered:</strong> Overview, Etymology, Geography, Topography, Climate & Weather History, Municipal Governance, Demographics, Economy, Transport Infrastructure, Culture & Heritage, Architecture, Parks & Ecology, Education, Public Health, Sports, Tourism, Gastronomy, Sister Cities, and Future Urban Development.</li>
+<li><strong>Metrics:</strong> Displays live measured word count (targeting 4,000+ words) and estimated reading time.</li>
+</ul>
+
+<hr>
+
+<h3>17. Map Implementation</h3>
+<ul>
+<li><strong>Library:</strong> Leaflet.js v1.9.4 with OpenStreetMap tile provider.</li>
+<li><strong>Container:</strong> Dedicated <code>#map-container</code> and <code>#map-modal</code> containers with responsive sizing.</li>
+<li><strong>Markers:</strong> Accurately positioned using latitude and longitude coordinates from OpenWeatherMap.</li>
+</ul>
+
+<hr>
+
+<h3>18. Database & Data Flow</h3>
+<ul>
+<li><strong>Models:</strong></li>
+<li><code>User</code>: Handles credentials, hashed passwords, demo flags, and timestamps.</li>
+<li><code>SavedCity</code>: One-to-many relationship mapping user accounts to bookmarked locations.</li>
+<li><code>SearchHistory</code>: Records queries, timestamps, and observed temperatures for historical analytics.</li>
+<li><strong>Isolation:</strong> Saved cities and search histories are strictly scoped to the authenticated user's ID.</li>
+</ul>
+
+<hr>
+
+<h3>19. Redis and Celery Infrastructure</h3>
+<ul>
+<li><strong>Redis:</strong> Configured via <code>REDIS_URL</code> in <code>config.py</code>. Automatically falls back to an in-memory dictionary if Redis is unavailable locally.</li>
+<li><strong>Celery:</strong> Configured for background tasks and daily digest emails (<code>tasks/celery_tasks.py</code>).</li>
+</ul>
+
+<hr>
+
+<h3>20. Weather & Forecast Workflows</h3>
+<ol>
+<li>User enters a query (e.g., "Tokyo") in the central pill search bar.</li>
+<li><code>fetchWeather(city)</code> fires parallel asynchronous requests:</li>
+<ul>
+<li>Primary weather data (<code>/api/weather/Tokyo</code>)</li>
+<li>High-resolution city imagery (<code>/api/background/Tokyo</code>)</li>
+<li>5-day / 24-hour forecast data (<code>/api/forecast/Tokyo</code>)</li>
+<li>Multi-pollutant AQI and UV readings (<code>/api/aqi</code>, <code>/api/uv</code>)</li>
+<li>Grounded AI briefing (<code>/api/weather/Tokyo/briefing</code>)</li>
+<li>Municipal encyclopedia monograph (<code>/api/encyclopedia/Tokyo</code>)</li>
+<li>Floating weather card, 3D atmospheric scene, 5-day tiles, hourly spline chart, and encyclopedia TOC update simultaneously.</li>
+</ul>
+</ol>
+
+<hr>
+
+<h3>21. CSV Export Implementation</h3>
+<ul>
+<li><strong>Current Weather CSV (<code>climasense_current_weather_{city}.csv</code>):</strong> City, Country, Timestamp (UTC), Temperature (°C), Feels Like (°C), Condition, Humidity (%), Wind Speed (m/s), Wind Direction, Pressure (hPa), Visibility (km).</li>
+<li><strong>Hourly Forecast CSV (<code>climasense_hourly_forecast_{city}.csv</code>):</strong> City, Country, Local Time, UTC Time, Temperature (°C), Condition, Rain Probability (%), Humidity (%), Wind Speed (m/s).</li>
+<li><strong>Weekly Forecast CSV (<code>climasense_weekly_forecast_{city}.csv</code>):</strong> City, Country, Date, Day of Week, Min Temp (°C), Max Temp (°C), Midday Condition, Rain Probability (%),</li>
+<li><strong>City Comparison CSV (<code>climasense_comparison.csv</code>):</strong> Side-by-side metric matrix comparing temperatures, humidity, wind, and pressure with calculated differences.</li>
+<li><strong>Search History CSV (<code>climasense_search_history.csv</code>):</strong> Query ID, City, and Search Timestamp.</li>
+<li><strong>Security Policy:</strong> All CSV cells are sanitized against spreadsheet formula injection by prepending a single quote (<code>'</code>) if the text begins with <code>=</code>, <code>+</code>, <code>-</code>, <code>@</code>, tab, or newline characters.</li>
+</ul>
+
+<hr>
+
+<h3>22. Security and Authentication</h3>
+<ul>
+<li><strong>Password Protection:</strong> Uses <code>bcrypt</code> with salt hashing.</li>
+<li><strong>Session Security:</strong> HTTP-only cookies with configurable <code>SESSION_COOKIE_SECURE</code>.</li>
+<li><strong>API Protection:</strong> Server-side proxying ensures OpenWeather, Unsplash, and Gemini API keys are never delivered to the client.</li>
+<li><strong>Reflected XSS Prevention:</strong> PDF and export templates strictly escape user-supplied strings through Jinja2 auto-escaping.</li>
+<li><strong>Secret Validation:</strong> Application startup enforces a non-default <code>SECRET_KEY</code> in production environments.</li>
+</ul>
+
+<hr>
+
+<h3>23. Error Handling and Caching</h3>
+<ul>
+<li><strong>Network Resilience:</strong> Graceful error messages and retry prompts on network dropouts.</li>
+<li><strong>Cache TTL Hierarchy:</strong> Weather observations cache for 5 minutes (300s); Unsplash scenery caches for 24 hours (86400s); AI briefings cache for 30 minutes (1800s).</li>
+<li><strong>No Stale AI:</strong> Stale weather data is purged before generating new AI briefings.</li>
+</ul>
+
+<hr>
+
+<h3>24. Installation and Configuration</h3>
+<pre><code><h1>1. Clone repository & enter directory</h1>
+<p>cd ClimaSense</p>
+
+<h1>2. Create virtual environment</h1>
+<p>python -m venv venv</p>
+<p>venv\Scripts\activate  # Windows</p>
+<h1>source venv/bin/activate  # macOS/Linux</h1>
+
+<h1>3. Install dependencies</h1>
+<p>pip install -r requirements.txt</p>
+
+<h1>4. Configure environment</h1>
+<p>cp .env.example .env</p>
+<h1>Edit .env with your OpenWeather, Unsplash, and Gemini API keys</h1>
+
+<h1>5. Run database initialization & startup</h1>
+<p>python app.py</p>
+<p></code></pre></p>
+
+<hr>
+
+<h3>25. Testing Methodology</h3>
+<ul>
+<li><strong>Framework:</strong> <code>pytest</code> v8.0 with Flask test client.</li>
+<li><strong>Scope:</strong></li>
+<li><code>test_ai.py</code>: Gemini prompt formation, key header sanitization, fallback rules.</li>
+<li><code>test_auth.py</code>: User registration, demo login, bcrypt verification, session persistence.</li>
+<li><code>test_full_phases.py</code>: Multi-phase end-to-end routing and security headers.</li>
+<li><code>test_history.py</code>: Search history logging and API retrieval.</li>
+<li><code>test_master.py</code>: Complete system integration assertions.</li>
+<li><code>test_phase0.py</code>: Regression verification for previously resolved syntax and key issues.</li>
+<li><code>test_weather.py</code>: Weather parsing, CSV exports, forecast formatting, Unsplash proxy.</li>
+</ul>
+
+<hr>
+
+<h3>26. Actual Test Results</h3>
+<p><strong>Status: PASS (42/42 Tests Passed — 100% Success Rate)</strong></p>
+<pre><code>============================= test session starts =============================
+<p>platform win32 -- Python 3.8.2, pytest-8.0.0, pluggy-1.5.0</p>
+<p>rootdir: C:\Users\91797\OneDrive\Desktop\ClimaSense</p>
+<p>configfile: pytest.ini</p>
+<p>collected 42 items</p>
+
+<p>tests\test_ai.py ..........                                              [ 23%]</p>
+<p>tests\test_auth.py ....                                                  [ 33%]</p>
+<p>tests\test_full_phases.py .......                                        [ 50%]</p>
+<p>tests\test_history.py .                                                  [ 52%]</p>
+<p>tests\test_master.py .....                                               [ 64%]</p>
+<p>tests\test_phase0.py ......                                              [ 78%]</p>
+<p>tests\test_weather.py .........                                          [100%]</p>
+
+<p>============================= 42 passed in 23.79s =============================</p>
+<p></code></pre></p>
+
+<hr>
+
+<h3>27. Application Screenshots & Visual References</h3>
+<p>Visual design mockups and layout targets are documented in <code>docs/design_references/</code>:</p>
+<ul>
+<li><code>01-login-reference.jpg</code>: Authentication card with feature list and demo access.</li>
+<li><code>02-signup-reference.jpg</code>: Account registration with password strength meter.</li>
+<li><code>03-password-recovery-reference.jpg</code>: Password recovery interface.</li>
+<li><code>04-home-reference.jpg</code>: Main application welcome and hero overview.</li>
+<li><code>05-weather-dashboard-reference.jpg</code>: Complete live weather dashboard.</li>
+<li><code>06-cities-explorer-reference.jpg</code>: Global cities destination explorer.</li>
+<li><code>07-saved-cities-reference.jpg</code>: Bookmarked favorite cities shelf.</li>
+<li><code>08-city-comparison-reference.jpg</code>: Multi-city side-by-side comparison screen.</li>
+<li><code>09-gemini-assistant-reference.jpg</code>: Interactive AI weather assistant interface.</li>
+<li><code>10-city-encyclopedia-reference.jpg</code>: Municipal monograph with sticky TOC sidebar.</li>
+<li><code>11-hourly-forecast-reference.jpg</code>: 24-hour hourly temperature spline curve.</li>
+</ul>
+
+<hr>
+
+<h3>28. Deployment Instructions (Render / Production)</h3>
+<ol>
+<li><strong>Web Service Setup:</strong> Connect GitHub repository to Render or similar cloud platform.</li>
+<li><strong>Build Command:</strong> <code>pip install -r requirements.txt</code></li>
+<li><strong>Start Command:</strong> <code>gunicorn --worker-class eventlet -w 1 app:app</code></li>
+<li><strong>Environment Variables:</strong></li>
+<ul>
+<li><code>SECRET_KEY</code>: High-entropy 64-character random string.</li>
+<li><code>OPENWEATHER_API_KEY</code>: OpenWeatherMap commercial/free tier key.</li>
+<li><code>UNSPLASH_API_KEY</code>: Unsplash developer access key.</li>
+<li><code>AI_API_KEY</code>: Google Gemini API key.</li>
+<li><code>FLASK_ENV</code>: <code>production</code></li>
+</ul>
+</ol>
+
+<hr>
+
+<h3>29. Known Limitations</h3>
+<ol>
+<li><strong>Demo Tier Rate Limits:</strong> Unsplash demo access keys allow up to 50 requests/hour; OpenWeather free tier permits 60 calls/minute. Caching layers are tuned to prevent exceeding these ceilings.</li>
+<li><strong>5-Day Numerical Horizon:</strong> Numerical meteorological forecasts are scientifically verifiable up to 5 days ahead via the standard OpenWeather API; requests beyond 5 days transparently communicate forecast limitations.</li>
+<li><strong>Hardware Acceleration:</strong> Advanced CSS 3D transforms require standard WebGL/CSS 3D browser support; low-spec devices gracefully receive static layered fallback visuals.</li>
+</ol>
+
+<hr>
+
+<h3>30. Future Improvements</h3>
+<ul>
+<li>Multi-city radar Doppler radar tile overlay integration using RainViewer API.</li>
+<li>Native mobile client packaging via Apache Cordova / Capacitor.</li>
+<li>Personalized push notifications for extreme weather warning thresholds via Web Push API.</li>
+</ul>
+
+<hr>
+
+<h3>31. Conclusion</h3>
+<p>ClimaSense successfully combines scientific meteorological data with accessible human presentation. By implementing a strict light pastel design system, formula-safe CSV exports, grounded AI interpretations, and authoritative municipal monographs, the application establishes a high benchmark for modern academic and commercial weather portals.</p>
+
+<hr>
+
+<h3>32. References</h3>
+<ol>
+<li>OpenWeatherMap API Documentation: https://openweathermap.org/api</li>
+<li>Unsplash API Developer Documentation: https://unsplash.com/documentation</li>
+<li>Google Gemini AI API: https://ai.google.dev/docs</li>
+<li>Chart.js Documentation: https://www.chartjs.org/docs/</li>
+<li>Leaflet.js Documentation: https://leafletjs.com/reference.html</li>
+<li>OWASP Formula Injection Guidelines: https://owasp.org/www-community/attacks/CSV_Injection</li>
+</ol>
+
+</body>
+</html>

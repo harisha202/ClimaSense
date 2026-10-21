@@ -31,7 +31,7 @@ class Config:
     # Google Gemini AI Configuration
     AI_PROVIDER = os.environ.get('AI_PROVIDER', 'gemini')
     AI_API_KEY = os.environ.get('AI_API_KEY') or os.environ.get('GEMINI_API_KEY')
-    AI_MODEL = os.environ.get('AI_MODEL', 'gemini-1.5-flash')
+    AI_MODEL = os.environ.get('AI_MODEL', 'gemini-2.0-flash')
     AI_BRIEFING_CACHE_TTL = int(os.environ.get('AI_BRIEFING_CACHE_TTL', 1800))
     AI_CHAT_RATE_LIMIT = int(os.environ.get('AI_CHAT_RATE_LIMIT', 10))
     AI_MAX_OUTPUT_TOKENS = int(os.environ.get('AI_MAX_OUTPUT_TOKENS', 800))
@@ -43,7 +43,16 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
+    
+    @classmethod
+    def init_app(cls, app):
+        secret = os.environ.get('SECRET_KEY')
+        if not secret or secret == 'dev_secret_key' or len(secret) < 16:
+            raise ValueError(
+                "CRITICAL SECURITY ERROR: SECRET_KEY must be set to a strong random secret in production! "
+                "Default 'dev_secret_key' is rejected."
+            )
 
 class TestingConfig(Config):
     TESTING = True

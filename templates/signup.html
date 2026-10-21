@@ -4,94 +4,169 @@
 
 {% block extra_css %}
 <style>
-    /* Dawn / Sunrise Theme - 3D */
-    .layer-back {
-        background: linear-gradient(to top, #ff7e67, #3a0ca3);
+    .auth-page {
+        min-height: calc(100vh - 120px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
     }
-    .layer-mid {
-        background: linear-gradient(to top, rgba(255,190,83,0.2), transparent);
-        animation: slowDrift 25s infinite alternate ease-in-out;
-    }
-    
-    .orb-sun {
-        /* Large sun orb */
-        width: 300px;
-        height: 300px;
-        top: 40%;
-        left: 50%;
-        margin-left: -150px; /* center it */
-        background: radial-gradient(circle, #ffbe53, transparent 60%);
-        box-shadow: 0 0 100px #ff7e67;
-        transform: translateZ(-400px);
-        animation: pulseSun 8s infinite alternate ease-in-out;
-    }
-    
-    @keyframes slowDrift {
-        0% { transform: translateZ(-300px) scale(1.2) translateX(-3%); }
-        100% { transform: translateZ(-300px) scale(1.2) translateX(3%); }
-    }
-    @keyframes pulseSun {
-        0% { transform: translateZ(-400px) scale(1); opacity: 0.8; }
-        100% { transform: translateZ(-400px) scale(1.1); opacity: 1; }
-    }
-    
-    .auth-card {
-        transform-style: preserve-3d;
-        background: linear-gradient(135deg, rgba(60, 25, 25, 0.9), rgba(20, 10, 10, 0.95));
-        border: 1px solid rgba(255, 126, 103, 0.3);
-        box-shadow: 0 15px 35px rgba(0,0,0,0.6), inset 0 2px 0 rgba(255,255,255,0.1);
-        padding: 2rem;
-        border-radius: 15px;
-        width: 100%;
-        max-width: 400px;
-        transition: transform 0.1s;
-    }
-    
-    .form-input {
-        background: rgba(0, 0, 0, 0.3);
-        color: #fff5e6;
-        border: 1px solid rgba(255, 126, 103, 0.4);
-    }
-    .form-input:focus { border-color: #ff7e67; outline: none; }
-    .auth-btn { background: linear-gradient(135deg, #ff7e67, #ffbe53); color: #1a0a0a; border: none; }
-</style>
-{% endblock %}
 
-{% block scene_orbs %}
-<div class="orb orb-sun"></div>
+    .auth-card {
+        background: var(--surface-card);
+        border: 1px solid var(--border-subtle);
+        box-shadow: var(--shadow-card);
+        padding: 2.5rem;
+        border-radius: var(--radius-xl);
+        width: 100%;
+        max-width: 440px;
+    }
+
+    .auth-title {
+        color: var(--text-heading);
+        font-size: 1.85rem;
+        font-weight: 800;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+
+    .auth-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--text-heading);
+        margin-bottom: 0.4rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.85rem 1.15rem;
+        border-radius: var(--radius-pill);
+        border: 1.5px solid var(--border-subtle);
+        background: var(--surface-input);
+        color: var(--text-heading);
+        font-size: 0.98rem;
+        outline: none;
+        transition: all var(--transition-fast);
+    }
+
+    .form-input:focus {
+        border-color: var(--border-focus);
+        box-shadow: 0 0 0 3px var(--blue-pale);
+    }
+
+    .auth-btn {
+        background: var(--blue-primary);
+        color: #FFFFFF;
+        font-weight: 700;
+        width: 100%;
+        padding: 0.85rem;
+        border: none;
+        border-radius: var(--radius-pill);
+        cursor: pointer;
+        font-size: 1rem;
+        transition: all var(--transition-fast);
+        box-shadow: 0 4px 14px rgba(49, 133, 214, 0.3);
+    }
+
+    .auth-btn:hover {
+        background: var(--blue-deep);
+        transform: translateY(-2px);
+    }
+
+    .strength-bar {
+        height: 5px;
+        border-radius: 4px;
+        margin-top: 6px;
+        transition: all 0.3s;
+        background: var(--border-subtle);
+    }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="auth-page">
     <div class="auth-card glass">
         <h2 class="auth-title">Create Account</h2>
+        <p class="auth-subtitle">Join ClimaSense for Grounded Weather Insights</p>
         <form id="signup-form">
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" class="form-input" required>
+                <label for="username">Username (3-30 chars)</label>
+                <input type="text" id="username" class="form-input" required minlength="3" maxlength="30" placeholder="e.g. climate_watcher">
             </div>
             <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" class="form-input" required>
+                <label for="email">Email Address</label>
+                <input type="email" id="email" class="form-input" required placeholder="name@example.com">
             </div>
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" class="form-input" required>
+                <label for="password">Password (min 8 chars, mixed)</label>
+                <input type="password" id="password" class="form-input" required minlength="8" placeholder="••••••••">
+                <div class="strength-bar" id="strength-meter"></div>
+                <div id="strength-text" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;"></div>
             </div>
             <div class="form-group">
                 <label for="confirm_password">Confirm Password</label>
-                <input type="password" id="confirm_password" class="form-input" required>
+                <input type="password" id="confirm_password" class="form-input" required minlength="8" placeholder="••••••••">
             </div>
-            <div id="signup-error" class="error-msg text-danger hidden mt-2"></div>
-            <button type="submit" class="auth-btn mt-4">Sign Up</button>
+            <div id="signup-error" class="error-msg text-danger hidden mt-2" style="color: var(--danger); font-size: 0.9rem;"></div>
+            <button type="submit" class="auth-btn mt-4">Create Free Account</button>
         </form>
-        <a href="{{ url_for('auth.show_login') }}" class="auth-btn-secondary">Already have an account? Log in</a>
+        <a href="{{ url_for('auth.show_login') }}" style="display: block; text-align: center; margin-top: 1.25rem; color: var(--blue-primary); text-decoration: none; font-weight: 600;">Already have an account? Log in</a>
     </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+const passEl = document.getElementById('password');
+const meterEl = document.getElementById('strength-meter');
+const textEl = document.getElementById('strength-text');
+
+passEl.addEventListener('input', () => {
+    const val = passEl.value;
+    let score = 0;
+    if (val.length >= 8) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+
+    if (val.length === 0) {
+        meterEl.style.width = '0%';
+        textEl.textContent = '';
+    } else if (score <= 1) {
+        meterEl.style.width = '25%';
+        meterEl.style.background = 'var(--danger)';
+        textEl.textContent = 'Weak password';
+        textEl.style.color = 'var(--danger)';
+    } else if (score === 2) {
+        meterEl.style.width = '50%';
+        meterEl.style.background = 'var(--sun-accent)';
+        textEl.textContent = 'Moderate password';
+        textEl.style.color = 'var(--sun-accent)';
+    } else if (score === 3) {
+        meterEl.style.width = '75%';
+        meterEl.style.background = 'var(--blue-primary)';
+        textEl.textContent = 'Strong password';
+        textEl.style.color = 'var(--blue-primary)';
+    } else {
+        meterEl.style.width = '100%';
+        meterEl.style.background = 'var(--green-accent)';
+        textEl.textContent = 'Excellent strength';
+        textEl.style.color = 'var(--green-deep)';
+    }
+});
+
 document.getElementById('signup-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const u = document.getElementById('username').value;
@@ -100,28 +175,28 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
     const cp = document.getElementById('confirm_password').value;
     const err = document.getElementById('signup-error');
     err.classList.add('hidden');
-    
+
     if (p !== cp) {
-        err.textContent = 'Passwords do not match';
+        err.textContent = 'Passwords do not match.';
         err.classList.remove('hidden');
         return;
     }
-    
+
     try {
         const res = await fetch('/signup', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({username: u, email: em, password: p})
+            body: JSON.stringify({username: u, email: em, password: p, confirm_password: cp})
         });
         const data = await res.json();
         if (data.success) {
-            window.location.href = '/';
+            window.location.href = '/index';
         } else {
             err.textContent = data.message || 'Signup failed';
             err.classList.remove('hidden');
         }
     } catch(e) {
-        err.textContent = 'Server error';
+        err.textContent = 'Server connection error';
         err.classList.remove('hidden');
     }
 });

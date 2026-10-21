@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}7-Day Extended Forecast - ClimaSense{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1100px; margin: 2rem auto; padding: 0 1rem;">
+    <div class="glass" style="padding: 2rem 2.5rem; margin-bottom: 2rem; border-radius: var(--radius-xl);">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom: 2rem;">
+            <div>
+                <h1 style="font-size: 2rem; color: var(--text-heading); margin: 0 0 0.35rem 0;">
+                    <i class="fa-regular fa-calendar-days" style="color: var(--blue-primary); margin-right: 8px;"></i> Extended 5- to 7-Day Outlook
+                </h1>
+                <p id="weekly-page-city" style="color: var(--text-secondary); font-size: 1rem; margin: 0;">Multi-day synoptic projections and temperature bands.</p>
+            </div>
+            <div style="display: flex; gap: 0.6rem;">
+                <input type="text" id="weekly-city-input" class="search-input" placeholder="Change City" value="Tokyo" style="max-width: 200px; padding: 0.75rem 1.15rem; border-radius: var(--radius-pill);">
+                <button id="weekly-search-btn" class="search-btn" style="padding: 0.75rem 1.4rem; border-radius: var(--radius-pill);">Update</button>
+            </div>
+        </div>
+
+        <div id="weekly-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+            <!-- Populated via JS -->
+        </div>
+
+        <div style="position: relative; height: 320px; width: 100%; background: var(--surface-alt); border-radius: var(--radius-lg); padding: 1.25rem; border: 1px solid var(--border-subtle);">
+            <canvas id="weekly-chart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let weeklyChart = null;
+
+async function loadWeekly(city) {
+    document.getElementById('weekly-page-city').textContent = `Showing extended meteorological outlook for ${city}`;
+    try {
+        const res = await fetch(`/api/forecast/${encodeURIComponent(city)}`);
+        const data = await res.json();
+        if (data.success && data.forecast) {
+            const grid = document.getElementById('weekly-cards-grid');
+            grid.innerHTML = '';
+
+            const days = [];
+            const highs = [];
+            const lows = [];
+
+            data.forecast.forEach(item => {
+                const date = new Date(item.date).toLocaleDateString('en-GB', {weekday: 'short', month: 'short', day: 'numeric'});
+                const high = Math.round(item.max_temp !== undefined ? item.max_temp : item.temp);
+                const low = Math.round(item.min_temp !== undefined ? item.min_temp : item.temp - 4);
+
+                days.push(date);
+                highs.push(high);
+                lows.push(low);
+
+                const card = document.createElement('div');
+                card.style.cssText = 'background: var(--surface-card); border: 1px solid var(--border-subtle); padding: 1.25rem; border-radius: var(--radius-md); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; box-shadow: var(--shadow-subtle);';
+                card.innerHTML = `
+                    <strong style="font-size: 1rem; color: var(--text-heading);">${date}</strong>
+                    <img src="https://openweathermap.org/img/wn/${item.icon}@2x.png" alt="icon" style="width: 55px; height: 55px;">
+                    <div style="font-size: 0.9rem; color: var(--text-secondary); text-transform: capitalize;">${item.description}</div>
+                    <div style="font-weight: 700; font-size: 1.15rem; color: var(--blue-deep); margin-top: 4px;">
+                        ${high}° <span style="font-size: 0.9rem; color: var(--text-secondary); font-weight: normal;">/ ${low}°</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+
+            const ctx = document.getElementById('weekly-chart').getContext('2d');
+            if (weeklyChart) weeklyChart.destroy();
+
+            weeklyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [
+                        { label: 'High Temp (°C)', data: highs, borderColor: '#F4B942', backgroundColor: 'rgba(244, 185, 66, 0.1)', fill: false, tension: 0.35, borderWidth: 3 },
+                        { label: 'Low Temp (°C)', data: lows, borderColor: '#3185D6', backgroundColor: 'rgba(49, 133, 214, 0.1)', fill: false, tension: 0.35, borderWidth: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { ticks: { color: '#64788B' }, grid: { color: 'rgba(221, 234, 243, 0.6)' } },
+                        x: { ticks: { color: '#20364B' }, grid: { color: 'transparent' } }
+                    }
+                }
+            });
+        }
+    } catch(e) { console.error('Error loading weekly:', e); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const city = localStorage.getItem('lastCity') || 'Tokyo';
+    document.getElementById('weekly-city-input').value = city;
+    loadWeekly(city);
+
+    document.getElementById('weekly-search-btn').addEventListener('click', () => {
+        const c = document.getElementById('weekly-city-input').value.trim();
+        if (c) loadWeekly(c);
+    });
+});
+</script>
+{% endblock %}

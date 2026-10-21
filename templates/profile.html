@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}User Profile - ClimaSense{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-container {
+        max-width: 860px;
+        margin: 2.5rem auto;
+        padding: 0 1rem;
+    }
+
+    .profile-card {
+        background: var(--surface-card);
+        border: 1px solid var(--border-subtle);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-card);
+        padding: 2.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .profile-header-row {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding-bottom: 2rem;
+        border-bottom: 1px solid var(--border-subtle);
+        margin-bottom: 2rem;
+    }
+
+    .avatar-large {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: var(--blue-pale);
+        color: var(--blue-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        font-weight: 800;
+        border: 2px solid var(--blue-soft);
+    }
+
+    .profile-title {
+        font-size: 1.8rem;
+        color: var(--text-heading);
+        margin: 0;
+    }
+
+    .profile-email {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        margin-top: 4px;
+    }
+
+    .profile-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .meta-box {
+        background: var(--surface-alt);
+        border: 1px solid var(--border-subtle);
+        padding: 1.25rem;
+        border-radius: var(--radius-md);
+    }
+
+    .meta-box-label {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+    }
+
+    .meta-box-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--text-heading);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-card glass">
+        <div class="profile-header-row">
+            <div class="avatar-large">
+                {{ user.username[0].upper() }}
+            </div>
+            <div>
+                <h1 class="profile-title">{{ user.username }}</h1>
+                <div class="profile-email"><i class="fa-regular fa-envelope" style="margin-right: 6px;"></i> {{ user.email }}</div>
+            </div>
+        </div>
+
+        <div class="profile-meta-grid">
+            <div class="meta-box">
+                <div class="meta-box-label">Account Status</div>
+                <div class="meta-box-value" style="color: var(--green-deep);"><i class="fa-solid fa-circle-check" style="font-size: 1rem; margin-right: 4px;"></i> Verified Active</div>
+            </div>
+            <div class="meta-box">
+                <div class="meta-box-label">Saved Favorites</div>
+                <div class="meta-box-value" style="color: var(--blue-primary);"><i class="fa-solid fa-star" style="font-size: 1rem; margin-right: 4px;"></i> {{ saved_count }} Cities</div>
+            </div>
+            <div class="meta-box">
+                <div class="meta-box-label">Account Created</div>
+                <div class="meta-box-value" style="font-size: 1.05rem;">{{ user.created_at.strftime('%b %d, %Y') if user.created_at else '2025' }}</div>
+            </div>
+        </div>
+
+        <h3 style="font-size: 1.25rem; color: var(--text-heading); margin-bottom: 1.25rem;">
+            <i class="fa-solid fa-lock" style="color: var(--blue-primary); margin-right: 8px;"></i> Security & Password Change
+        </h3>
+        <form id="password-change-form" style="max-width: 480px;">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display:block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.35rem;">Current Password</label>
+                <input type="password" id="current-pass" class="form-input" style="width: 100%; padding: 0.75rem 1rem; border-radius: var(--radius-pill); border: 1.5px solid var(--border-subtle); outline: none;" required>
+            </div>
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="display:block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.35rem;">New Password (min 8 chars)</label>
+                <input type="password" id="new-pass" class="form-input" style="width: 100%; padding: 0.75rem 1rem; border-radius: var(--radius-pill); border: 1.5px solid var(--border-subtle); outline: none;" minlength="8" required>
+            </div>
+            <div id="pass-msg" class="hidden" style="padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.9rem;"></div>
+            <button type="submit" class="search-btn" style="padding: 0.75rem 1.6rem; border-radius: var(--radius-pill);">Update Password</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('password-change-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const curr = document.getElementById('current-pass').value;
+    const next = document.getElementById('new-pass').value;
+    const msg = document.getElementById('pass-msg');
+
+    msg.className = 'hidden';
+
+    try {
+        const res = await fetch('/profile', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({current_password: curr, new_password: next})
+        });
+        const data = await res.json();
+        msg.style.cssText = data.success 
+            ? 'background: var(--green-pale); color: var(--green-deep); border: 1px solid var(--green-mint); padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem;' 
+            : 'background: var(--danger-pale); color: var(--danger); border: 1px solid #FFC9C9; padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem;';
+        msg.textContent = data.message;
+        msg.classList.remove('hidden');
+        if (data.success) {
+            document.getElementById('current-pass').value = '';
+            document.getElementById('new-pass').value = '';
+        }
+    } catch(e) {
+        msg.style.cssText = 'background: var(--danger-pale); color: var(--danger); padding: 0.75rem; border-radius: 8px; margin-bottom: 1rem;';
+        msg.textContent = 'Failed to update password. Server error.';
+        msg.classList.remove('hidden');
+    }
+});
+</script>
+{% endblock %}

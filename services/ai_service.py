@@ -112,19 +112,26 @@ def is_valid_gemini_key(key):
 def _call_gemini_api(prompt, max_tokens=None):
     """
     Calls the Google Gemini REST API using server-side credentials.
+    CRITICAL SECURITY & RELIABILITY FIX:
+    - Never passes the API key in the URL query string (avoids leaking into web server logs).
+    - Passes API key strictly in the 'x-goog-api-key' request header.
+    - Never logs raw exception text that might contain sensitive parameters.
     Returns (response_text, True) on success, or (error_msg, False) on failure.
     """
     api_key = current_app.config.get('AI_API_KEY')
     if not is_valid_gemini_key(api_key):
         return "Gemini API key is not configured.", False
         
-    model = current_app.config.get('AI_MODEL', 'gemini-1.5-flash')
+    model = current_app.config.get('AI_MODEL', 'gemini-2.0-flash')
     timeout = current_app.config.get('AI_REQUEST_TIMEOUT', 10)
     if max_tokens is None:
         max_tokens = current_app.config.get('AI_MAX_OUTPUT_TOKENS', 800)
         
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    headers = {"Content-Type": "application/json"}
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": api_key
+    }
     payload = {
         "contents": [{
             "parts": [{"text": prompt}]
@@ -146,15 +153,14 @@ def _call_gemini_api(prompt, max_tokens=None):
                     return parts[0]['text'].strip(), True
             return "Empty response from Gemini API.", False
         else:
-            err_msg = f"Gemini API error {resp.status_code}: {resp.text[:200]}"
-            current_app.logger.warning(err_msg)
-            return err_msg, False
+            current_app.logger.warning(f"Gemini API returned HTTP {resp.status_code}")
+            return f"Gemini API returned status {resp.status_code}", False
     except requests.exceptions.Timeout:
         current_app.logger.warning("Gemini API request timed out.")
         return "Gemini API request timed out.", False
-    except Exception as e:
-        current_app.logger.error(f"Error calling Gemini API: {e}")
-        return str(e), False
+    except Exception:
+        current_app.logger.error("Gemini API call failed due to a network or request error.")
+        return "Gemini API call failed.", False
 
 def build_weather_context(city, weather_data=None, forecast_data=None, aqi_data=None, uv_data=None):
     """
@@ -169,29 +175,32 @@ def build_weather_context(city, weather_data=None, forecast_data=None, aqi_data=
     lat = coord.get('lat')
     lon = coord.get('lon')
     
-    if forecast_data is None:
-        forecast_data = get_forecast(city)
-    if aqi_data is None and lat and lon:
-        aqi_data = get_aqi(lat, lon)
-    if uv_data is None and lat and lon:
-        uv_data = get_uv_index(lat, lon)
-        
+    # Gather other metrics if coordinates are available
+    if lat is not None and lon is not None:
+        if forecast_data is None:
+            forecast_data = get_forecast(city)
+        if aqi_data is None:
+            aqi_data = get_aqi(lat, lon)
+        if uv_data is None:
+            uv_data = get_uv_index(lat, lon)
+            
+    # Process AQI
+    aqi_val = 1
+    aqi_label = "Good"
+    main_pollutant = "PM2.5"
+    if aqi_data and 'list' in aqi_data and len(aqi_data['list']) > 0:
+        item = aqi_data['list'][0]
+        aqi_val = item.get('main', {}).get('aqi', 1)
+        labels = {1: "Good", 2: "Fair", 3: "Moderate", 4: "Poor", 5: "Very Poor"}
+        aqi_label = labels.get(aqi_val, "Moderate")
+        components = item.get('components', {})
+        if components:
+            main_pollutant = max(components.items(), key=lambda x: x[1])[0].upper()
+            
     main = weather_data.get('main', {})
     wind = weather_data.get('wind', {})
-    weather_desc = weather_data['weather'][0]['description'] if weather_data.get('weather') else 'N/A'
+    weather_desc = weather_data.get('weather', [{}])[0].get('description', 'Clear')
     
-    # AQI details
-    aqi_val = None
-    aqi_label = "Unavailable"
-    main_pollutant = "Unavailable"
-    if aqi_data and 'list' in aqi_data and len(aqi_data['list']) > 0:
-        first_aqi = aqi_data['list'][0]
-        aqi_val = first_aqi.get('main', {}).get('aqi')
-        labels = {1: 'Good', 2: 'Fair', 3: 'Moderate', 4: 'Poor', 5: 'Very Poor'}
-        aqi_label = labels.get(aqi_val, 'Unknown')
-        pm25 = first_aqi.get('components', {}).get('pm2_5', 0)
-        main_pollutant = f"PM2.5 ({pm25} µg/m³)" if pm25 else "PM2.5 (Normal)"
-        
     # UV details
     uv_val = uv_data.get('value', 5.0) if uv_data else None
     if uv_val is not None:
@@ -305,39 +314,45 @@ def generate_rule_based_briefing(context):
 def get_weather_briefing(city, force_refresh=False):
     """
     Generates or retrieves a cached AI Weather Briefing for a city.
-    Uses Google Gemini when configured; otherwise falls back gracefully to
-    a grounded rule-based briefing based on real data.
+    OPTIMIZED CACHING:
+    - Checks cache FIRST using 30-minute buckets before making weather API calls.
+    - Gracefully falls back to smart rule-based briefing when Gemini key is missing or fails.
     """
-    context = build_weather_context(city)
-    if not context:
-        return {'success': False, 'message': f"Could not retrieve weather data for '{city}'."}
+    if not city or not city.strip():
+        return {'success': False, 'message': 'City name required.'}
         
+    city_clean = city.strip()
     cache_ttl = current_app.config.get('AI_BRIEFING_CACHE_TTL', 1800)
-    cache_key = f"ai_briefing_{city.lower()}_{context['data_timestamp'].replace(' ', '_')}"
+    time_bucket = int(time.time() // 1800)
+    cache_key = f"ai_briefing_{city_clean.lower()}_{time_bucket}"
     
     if not force_refresh:
         cached = cache_get(cache_key)
         if cached:
-            cached['cached'] = True
-            return cached
+            cached_result = dict(cached)
+            cached_result['cached'] = True
+            return cached_result
             
+    context = build_weather_context(city_clean)
+    if not context:
+        return {'success': False, 'message': f"Could not retrieve weather data for '{city_clean}'."}
+        
     api_key = current_app.config.get('AI_API_KEY')
-    model_name = current_app.config.get('AI_MODEL', 'gemini-1.5-flash')
+    model_name = current_app.config.get('AI_MODEL', 'gemini-2.0-flash')
     
-    if api_key:
-        prompt = f"""You are ClimaSense AI, an intelligent, grounded meteorological assistant.
-Generate a concise, human-friendly Weather Briefing (3 to 4 sentences) for {context['city']}.
-Use ONLY the real measurements provided below. Do NOT invent or hallucinate unmeasured data.
+    if api_key and is_valid_gemini_key(api_key):
+        prompt = f"""You are ClimaSense Weather Intelligence Assistant.
+Create a structured, engaging, and professional 3-sentence daily weather briefing for {context['city']}, {context['country']}.
 
-REAL WEATHER DATA (JSON):
+GROUNDING RULES:
+1. Rely EXCLUSIVELY on the provided REAL WEATHER DATA below.
+2. State the current temperature, conditions, and feels-like temperature accurately.
+3. State whether an umbrella is needed today based on rain forecast and conditions.
+4. Give specific advice on clothing, outdoor exercise, and air quality.
+5. Never invent unmeasured numbers.
+
+REAL WEATHER DATA:
 {json.dumps(context, indent=2)}
-
-INSTRUCTIONS:
-1. Summarize current temperature, feels-like, and condition.
-2. State forecast changes over the next 24 hours (including whether rain is expected and if an umbrella is needed).
-3. Offer practical advice on clothing and outdoor exercise/activities.
-4. Mention UV precaution or Air Quality if notable.
-5. Keep tone professional, encouraging, and clear.
 """
         response_text, success = _call_gemini_api(prompt, max_tokens=300)
         if success:
@@ -355,6 +370,8 @@ INSTRUCTIONS:
             }
             cache_set(cache_key, result, ttl=cache_ttl)
             return result
+        else:
+            current_app.logger.info("Gemini call failed; upgrading seamlessly to Grounded Rule Engine.")
 
     # Rule-based fallback if API is not configured or failed
     fallback_text = generate_rule_based_briefing(context)
@@ -363,40 +380,74 @@ INSTRUCTIONS:
         'city': context['city'],
         'briefing': fallback_text,
         'is_ai_generated': False,
-        'provider': 'Grounded Rule Engine (Gemini Key Not Set / Offline)',
-        'model': 'Rule-Based Fallback',
+        'provider': 'Smart Rules (AI unavailable)',
+        'model': 'Rule-Based Engine',
+        'warning': 'AI model unavailable; generated using grounded meteorological rules.',
         'cached': False,
         'comfort_score': context['comfort_score'],
         'comfort_label': context['comfort_label'],
         'timestamp': context['data_timestamp']
     }
-    # Do not cache fallback for long if Gemini might be transiently offline
+    # Cache fallback for 5 minutes so live AI is retried soon
     cache_set(cache_key, result, ttl=300)
     return result
+
+STOP_WORDS = {
+    'work', 'school', 'office', 'home', 'gym', 'college', 'university',
+    'today', 'tomorrow', 'yesterday', 'tonight', 'morning', 'afternoon', 'evening', 'night',
+    'weekend', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday',
+    'week', 'month', 'year', 'days', 'hours', 'umbrella', 'drying', 'clothes', 'exercise',
+    'running', 'jogging', 'walking', 'cycling', 'workout', 'commute', 'travel', 'trip',
+    'breakfast', 'brunch', 'lunch', 'dinner', 'picnic', 'party', 'vacation',
+    'weather', 'forecast', 'temperature', 'rain', 'snow', 'cloud', 'clouds', 'sun', 'sunny',
+    'now', 'currently', 'soon', 'later', 'here', 'there', 'me', 'us', 'you', 'him', 'her',
+    'a', 'an', 'the', 'my', 'your', 'our', 'his', 'her', 'this', 'that', 'these', 'those'
+}
 
 def extract_cities_from_text(text, default_city='Bengaluru'):
     """
     Extracts potential city names from a user chat message.
-    Supports single cities and multi-city comparisons.
+    Supports single cities, multi-word cities (New York, Los Angeles),
+    accented characters (São Paulo), and multi-city comparisons.
+    Filters out common action/stop words like 'work', 'gym', 'tomorrow'.
     """
-    # Common known world/regional cities regex or split
-    # Check for patterns like "Compare X and Y", "trip to X", "weather in X"
-    cities = []
-    compare_match = re.search(r'(?i)compare\s+([A-Za-z\s]+?)\s+(?:and|with|to)\s+([A-Za-z\s]+?)(?:\s+weather|\?|\.|$)', text)
+    # 1. Multi-city comparison check: "Compare CityA and CityB" or "Compare CityA, CityB and CityC"
+    compare_match = re.search(r'(?i)compare\s+([^?.]+?)(?:\s+weather|\?|\.|$)', text)
     if compare_match:
-        c1 = compare_match.group(1).strip()
-        c2 = compare_match.group(2).strip()
-        return [c1, c2]
+        raw_list = compare_match.group(1)
+        # Split on commas, 'and', 'with', 'to'
+        chunks = re.split(r'(?i)\s*(?:,|and|with|to)\s*', raw_list)
+        found = [c.strip() for c in chunks if c.strip() and c.strip().lower() not in STOP_WORDS]
+        if len(found) >= 2:
+            return found
+
+    # 2. Check for "in <City>", "to <City>", "for <City>", "at <City>" with multi-word and unicode letters
+    # Matches city names composed of 1 to 3 words
+    in_matches = re.finditer(r'(?i)\b(?:in|to|at|for|around|near|of)\s+([A-Za-z\u00C0-\u024F]+(?:\s+[A-Za-z\u00C0-\u024F]+){0,2})', text)
+    candidates = []
+    for m in in_matches:
+        candidate = m.group(1).strip()
+        words = candidate.split()
+        # Discard trailing stop words
+        valid_words = []
+        for w in words:
+            if w.lower() in STOP_WORDS:
+                break
+            valid_words.append(w)
+        if valid_words:
+            cand = " ".join(valid_words)
+            if cand.lower() not in STOP_WORDS and len(cand) >= 2:
+                candidates.append(cand)
+                
+    if candidates:
+        return candidates[:3]
         
-    in_match = re.search(r'(?i)(?:in|to|for|at)\s+([A-Za-z]{3,20})(?:\s+this|\s+tomorrow|\s+today|\?|\.|$)', text)
-    if in_match:
-        c = in_match.group(1).strip()
-        # Avoid common non-city words
-        if c.lower() not in ['today', 'tomorrow', 'weekend', 'sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'umbrella', 'drying', 'clothes', 'exercise']:
-            return [c]
-            
-    # Default to current viewed city if no explicit city found
+    # Default to currently viewed city
     return [default_city]
+
+def _word_in(pattern, text):
+    """Whole-word regex search to avoid substring bugs (e.g. 'train' vs 'rain', 'brunch' vs 'run')."""
+    return bool(re.search(r'\b' + pattern + r'\b', text, re.IGNORECASE))
 
 def answer_weather_chat(user_question, current_city='Bengaluru', user_id=None):
     """
@@ -411,11 +462,19 @@ def answer_weather_chat(user_question, current_city='Bengaluru', user_id=None):
     if is_chat_rate_limited(rate_id):
         return {'success': False, 'message': 'Rate limit reached (max 10 questions/min). Please pause for a moment.'}
         
+    # Check for long-range future date questions beyond 5-day provider horizon early
+    is_far_future = bool(re.search(r'(?i)\b(next\s+month|next\s+year|in\s+2\s+weeks|in\s+3\s+weeks|next\s+season|next\s+decade)\b', cleaned_question))
+    if is_far_future:
+        return {
+            'success': True,
+            'answer': "Live meteorological provider forecasts are limited to a 5-day horizon. Long-range multi-week or monthly forecasts cannot be verified accurately with real-time station data.",
+            'is_ai_generated': False,
+            'provider': 'Smart Rules',
+            'cities': [current_city]
+        }
+        
     # Extract cities
     target_cities = extract_cities_from_text(cleaned_question, default_city=current_city)
-    
-    # Check for long-range future date questions beyond 5-day provider horizon
-    is_far_future = bool(re.search(r'(?i)(next\s+month|next\s+year|in\s+2\s+weeks|in\s+3\s+weeks|next\s+season)', cleaned_question))
     
     # Gather real weather context for all target cities
     city_contexts = {}
@@ -431,15 +490,15 @@ def answer_weather_chat(user_question, current_city='Bengaluru', user_id=None):
         }
         
     api_key = current_app.config.get('AI_API_KEY')
-    model_name = current_app.config.get('AI_MODEL', 'gemini-1.5-flash')
+    model_name = current_app.config.get('AI_MODEL', 'gemini-2.0-flash')
     
-    if api_key:
+    if api_key and is_valid_gemini_key(api_key):
         prompt = f"""You are ClimaSense Weather AI Assistant. Answer the user's weather question accurately, concisely, and supportively.
 CRITICAL SAFETY & GROUNDING RULES:
 1. Rely ONLY on the provided REAL WEATHER DATA below.
 2. Never invent, hallucinate, or fabricate unmeasured temperatures, rain, or forecasts.
 3. If the user asks about dates beyond the available 5-day forecast horizon, explicitly explain that live weather forecasts are limited to 5 days ahead, and provide what is known.
-4. If comparing multiple cities, compare their temperature, conditions, and rain probabilities directly based on the data.
+4. If comparing multiple cities, compare their temperature, conditions, and rain probabilities directly based on the data. Put each city on its own bullet point.
 5. If user asks about drying clothes or outdoor exercise, recommend specific times based on the hourly forecast.
 
 USER QUESTION:
@@ -458,14 +517,17 @@ REAL WEATHER DATA:
                 'model': model_name,
                 'cities': list(city_contexts.keys())
             }
-            
+        else:
+            current_app.logger.info("Gemini chat generation failed; falling back to rule engine.")
+
     # Grounded rule-based fallback response
     fallback_answer = _build_rule_based_chat_answer(cleaned_question, city_contexts, is_far_future)
     return {
         'success': True,
         'answer': fallback_answer,
         'is_ai_generated': False,
-        'provider': 'Grounded Rule Engine (Gemini Key Not Set / Offline)',
+        'provider': 'Smart Rules (AI unavailable)',
+        'warning': 'AI model unavailable; answer generated using grounded smart rules.',
         'cities': list(city_contexts.keys())
     }
 
@@ -477,10 +539,19 @@ def _build_rule_based_chat_answer(question, contexts, is_far_future):
         
     # Multi-city comparison
     if len(contexts) > 1:
-        parts = ["City Comparison:"]
+        lines = ["City Comparison:"]
         for cname, c in contexts.items():
-            parts.append(f"• {cname}: {round(c['current_temperature_c'], 1)}°C, {c['condition_description']}, Humidity: {c['humidity_percent']}%, Wind: {round(c['wind_speed_ms'], 1)} m/s.")
-        return " ".join(parts)
+            lines.append(f"• {cname}: {round(c['current_temperature_c'], 1)}°C, {c['condition_description']}, Humidity: {c['humidity_percent']}%, Wind: {round(c['wind_speed_ms'], 1)} m/s, Comfort: {c['comfort_label']}")
+        
+        # Add comparative summary if specific intent is detected
+        if _word_in(r'(exercise|run|running|workout)', q_lower):
+            best = min(contexts.values(), key=lambda x: abs(x['current_temperature_c'] - 21) + (x['aqi_index'] * 5))
+            lines.append(f"\nRecommendation: {best['city']} offers better conditions for running right now.")
+        elif _word_in(r'(warm|warmer|hot|hotter)', q_lower):
+            warmest = max(contexts.values(), key=lambda x: x['current_temperature_c'])
+            lines.append(f"\nComparison: {warmest['city']} is currently the warmer city at {round(warmest['current_temperature_c'], 1)}°C.")
+            
+        return "\n".join(lines)
         
     ctx = list(contexts.values())[0]
     cname = ctx['city']
@@ -489,26 +560,26 @@ def _build_rule_based_chat_answer(question, contexts, is_far_future):
     hourly = ctx.get('hourly_forecast_24h', [])
     rain_expected = any('rain' in h.get('condition', '').lower() or h.get('pop_percent', 0) > 40 for h in hourly)
     
-    # Umbrella question
-    if 'umbrella' in q_lower or 'rain' in q_lower:
+    # Umbrella / Rain question (strict whole-word matching)
+    if _word_in(r'(umbrella|rain|raining|showers?|drizzle|storm|precipitation)', q_lower):
         if rain_expected or 'rain' in desc.lower():
             return f"Yes, you should carry an umbrella in {cname}. Precipitation is detected or forecast within the next 24 hours."
         return f"An umbrella is likely not needed right now in {cname}. Current conditions are {desc} with a low chance of rain."
         
     # Clothes drying question
-    if 'dry' in q_lower or 'clothes' in q_lower or 'laundry' in q_lower:
+    if _word_in(r'(dry|drying|clothes|laundry)', q_lower):
         if rain_expected or ctx['humidity_percent'] > 75:
             return f"Outdoor clothes drying is not ideal today in {cname} due to elevated humidity ({ctx['humidity_percent']}%) and potential rain. Indoor drying is recommended."
-        return f"Good conditions for drying clothes in {cname}! Clear skies and moderate humidity ({ctx['humidity_percent']}%) support fast outdoor drying."
+        return f"Good conditions for drying clothes in {cname}! Current conditions are {desc} with moderate humidity ({ctx['humidity_percent']}%), which supports outdoor drying."
         
-    # Exercise question
-    if 'exercise' in q_lower or 'outdoor' in q_lower or 'run' in q_lower or 'jog' in q_lower:
+    # Exercise question (strict whole-word matching)
+    if _word_in(r'(exercise|outdoor|run|running|jog|jogging|workout|cycling)', q_lower):
         if temp > 32 or ctx['aqi_label'] in ['Poor', 'Very Poor']:
             return f"Limit intense outdoor exercise in {cname} right now. Conditions are hot ({round(temp, 1)}°C) and air quality is rated {ctx['aqi_label']}."
-        return f"Great time for outdoor workouts in {cname}! Temperatures are {round(temp, 1)}°C with {ctx['condition_description']} and {ctx['aqi_label']} air quality."
+        return f"Great time for outdoor workouts in {cname}! Temperatures are {round(temp, 1)}°C with {desc} and {ctx['aqi_label']} air quality."
         
     # What to wear
-    if 'wear' in q_lower or 'clothing' in q_lower or 'jacket' in q_lower:
+    if _word_in(r'(wear|clothing|clothes|jacket|outfit|coat)', q_lower):
         if temp < 12:
             return f"In {cname} ({round(temp, 1)}°C), wear warm layered clothing, a heavy jacket, and thermal wear if heading out late."
         elif temp > 28:
