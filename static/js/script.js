@@ -747,38 +747,7 @@ window.fetchBackground = async (city, weatherDesc = '') => {
             };
             img.src = data.url;
             
-            // Photographer and Unsplash attribution compliance using safe DOM nodes
-            const attrEl = document.getElementById('photo-attribution');
-            if (attrEl) {
-                attrEl.textContent = '';
-                const icon = document.createElement('i');
-                icon.className = 'fa-solid fa-camera';
-                icon.style.marginRight = '6px';
-
-                const spanBefore = document.createElement('span');
-                spanBefore.textContent = ' Photo by ';
-
-                const photoLink = document.createElement('a');
-                photoLink.href = data.photographer_url || 'https://unsplash.com/?utm_source=ClimaSense&utm_medium=referral';
-                photoLink.target = '_blank';
-                photoLink.rel = 'noopener noreferrer';
-                photoLink.textContent = data.photographer_name || 'Unsplash Community';
-
-                const spanMid = document.createElement('span');
-                spanMid.textContent = ' on ';
-
-                const unsplashLink = document.createElement('a');
-                unsplashLink.href = 'https://unsplash.com/?utm_source=ClimaSense&utm_medium=referral';
-                unsplashLink.target = '_blank';
-                unsplashLink.rel = 'noopener noreferrer';
-                unsplashLink.textContent = 'Unsplash';
-
-                attrEl.appendChild(icon);
-                attrEl.appendChild(spanBefore);
-                attrEl.appendChild(photoLink);
-                attrEl.appendChild(spanMid);
-                attrEl.appendChild(unsplashLink);
-            }
+            
         }
     } catch(e) { console.error('Error fetching background image:', e); }
 };
