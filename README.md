@@ -111,12 +111,6 @@ ClimaSense includes a comprehensive automated test suite (58 tests) covering rou
 python -m pytest -q -W default
 ```
 
-**Expected output:**
-```text
-..........................................................               [100%]
-58 passed in 31.28s
-```
-
 ---
 
 ## 📦 Clean Distribution Packaging
