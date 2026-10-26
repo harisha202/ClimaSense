@@ -25,8 +25,12 @@ class WeatherLog(db.Model):
             'id': self.id,
             'city': self.city,
             'temperature': self.temperature,
+            'feels_like': self.feels_like,
             'humidity': self.humidity,
             'pressure': self.pressure,
             'wind_speed': self.wind_speed,
+            'aqi': self.aqi,
+            'description': self.description,
+            'icon': self.icon,
             'recorded_at': self.recorded_at.isoformat()
         }

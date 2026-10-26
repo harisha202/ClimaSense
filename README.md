@@ -1,64 +1,60 @@
 # 🌤️ ClimaSense - AI-Powered Weather Intelligence Dashboard
 
-A modern, production-grade weather intelligence platform built with **Python 3 (Flask)**, integrating real-time meteorological networks (**OpenWeatherMap**), dynamic high-resolution urban photography strictly from **Unsplash**, and grounded generative intelligence (**Google Gemini API**).
+A modern, production-grade weather intelligence platform built with **Python 3 (Flask)**, integrating real-time meteorological networks (**OpenWeatherMap**), rotating travel-inspired photography of famous landmarks and scenic landscapes strictly from **Unsplash**, and grounded generative intelligence (**Google Gemini API**).
 
 ---
 
 ## 🌟 Overview & Key Capabilities
 
-ClimaSense provides an immersive, data-grounded weather experience. Rather than displaying isolated numbers, ClimaSense synthesizes live measurements into human-actionable insights, automated daily morning digests, and interactive conversational analytics.
+ClimaSense provides an immersive, data-grounded weather experience. The interface adheres to a strict, accessible **Light-Only Design System** (`#F7FBFF` background, `#FFFFFF` cards, `#3185D6` primary blue accents) with zero dark panels, zero jarring dark overlays, and full `prefers-reduced-motion` compliance.
 
 ### 🚀 Core Features
 
 1. **Live Grounded Weather Intelligence**
-   - Live temperature, feels-like temperature, humidity, atmospheric pressure, wind speed/direction, and visibility for any global city.
-   - Grounded **Comfort Score (0–100)** objectively computed from thermal comfort bands, humidity deviation, wind chill, and air quality index.
+   - Live temperature, feels-like temperature, humidity, atmospheric pressure, wind speed/direction, cloud coverage, sunrise/sunset, and visibility for any global city.
+   - Grounded **Comfort Score (0–100)** objectively computed from thermal neutrality bands, relative humidity, wind speed, and air quality index.
    - 24-Hour hourly progression timeline and 5-day meteorological forecasts with real probability of precipitation.
-   - Comprehensive **Air Quality Index (AQI 1–5)** with individual pollutant concentrations ($\text{PM}_{2.5}$, $\text{PM}_{10}$, $\text{NO}_2$, $\text{O}_3$, $\text{CO}$, $\text{SO}_2$) and true dominant pollutant identification via WHO ratio modeling.
+   - Comprehensive **Air Quality Index (AQI 1–5)** with individual pollutant concentrations ($\text{PM}_{2.5}$, $\text{PM}_{10}$, $\text{NO}_2$, $\text{O}_3$, $\text{CO}$, $\text{SO}_2$) and dominant pollutant identification via normalized WHO ratio modeling.
    - Real-time UV Index with risk category levels (Low, Moderate, High, Very High).
-   - Severe weather alerts mapped from provider condition thresholds (Flood warnings, high winds, severe thunderstorms, extreme heat).
+   - Severe weather alerts mapped from authoritative meteorological bulletins.
 
-2. **Google Gemini AI Weather Briefing**
+2. **Rotating Scenic & Landmark Background Photography**
+   - **Hero Section Background:** Whenever a user searches for a city, the main Weather Dashboard hero background displays rotating high-resolution photography of famous landmarks, tourist destinations, scenic landscapes, beaches, mountains, architecture, and attractive city skylines.
+   - **Decorative & Travel-Inspired:** The photograph serves as a travel-inspired scenic backdrop that rotates on subsequent searches, including repeated searches for the same city.
+   - **Data Independence:** Changing the photograph never modifies or fabricates weather data; all meteorological values, forecasts, charts, and maps remain strictly tied to the searched city.
+   - **Photographer Attribution:** Compliant Unsplash attribution badge displaying the photographer name and UTM referral link.
+   - **Smart Caching & Rate-Limit Protection:** A pool of scenic photographs is cached for 24 hours to honor API quotas, rotating sequentially. If the API key is absent, throttled (429), or unauthorized (401/403), curated fallback landmark photography is displayed with explicit `is_fallback: True` metadata.
+
+3. **Google Gemini AI Weather Briefing**
    - High-visibility **AI Weather Briefing Card** directly on the dashboard.
    - Uses server-side Google Gemini (`gemini-2.0-flash` or configured model) fed with a structured JSON context of measured values.
    - Passes API keys strictly via `x-goog-api-key` headers (never in URL parameters) to prevent credential leakage in access logs.
    - Delivers concise, human advice: temperature summary, 24-hour forecast changes, umbrella and rain recommendations, outdoor workout guidance, clothing advice, and UV/AQI health precautions.
    - Transparent **Smart Rules Fallback** with visible provider badge when Gemini is unconfigured, rate-limited, or offline.
 
-3. **Grounded AI Weather Chat Assistant**
+4. **Wikipedia City Information**
+   - Clean, concise Wikipedia summary extraction (250–400 characters, sentence-boundary aligned).
+   - Direct link to authoritative Wikipedia page and source attribution.
+   - Clean unavailable state when Wikipedia has no entry for a query.
+
+5. **Grounded AI Weather Chat Assistant**
    - Dedicated floating/docked interactive AI chat widget (`Ask AI`).
-   - One-click suggestion chips:
-     - *"Should I carry an umbrella today?"*
-     - *"What is the best time to dry clothes?"*
-     - *"Is this a good time for outdoor exercise?"*
-     - *"What should I wear today?"*
-     - *"Compare Bengaluru and London weather"*
-   - Intelligent city extraction supporting multi-word cities (*New York*, *Los Angeles*), accented names (*São Paulo*), and stop-word protection (*"for work"* correctly defaults to the current city).
-   - Strict whole-word regex matching prevents substring false positives (e.g., *"train"* will not trigger umbrella rain advice; *"brunch"* will not trigger workout advice).
-   - Strict 5-day forecast horizon enforcement (transparently explains that real provider forecasts are verifiable up to 5 days ahead, avoiding model hallucination).
+   - Bounded 6-turn conversation history with strict system prompt grounding.
+   - Transparent provider tagging (`Google Gemini` vs `Smart Rules Engine`).
+   - Suggestion chips for umbrellas, clothing recommendations, drying clothes, and workouts.
+   - Strict 5-day forecast horizon enforcement to prevent hallucination.
 
-4. **Unsplash-Only Dynamic Imagery**
-   - **Strictly Unsplash:** Every background and attribution is sourced directly from Unsplash. Wikipedia fallback has been completely removed to avoid flags, logos, or non-scenery images.
-   - **Curated Mood Fallbacks:** Curated Unsplash photography per weather mood (sunny, cloudy, rain, storm, snow, fog, night) with verified photographer credits and compliant referral links.
-   - **Smart Rate-Limit Awareness:** Respects Unsplash demo tier hourly rate limits with `X-Ratelimit-Remaining` inspection. Real city photos cache for 24 hours, while fallbacks cache for only 5 minutes to retry promptly.
-
-5. **Climate Analytics & Forecast Accuracy Tracker**
-   - **Forecast Accuracy Tracking:** Stores forecast projections in `forecast_snapshots` and compares them against next-day station observations to compute grounded accuracy percentages.
+6. **Climate Analytics & Forecast Accuracy Tracker**
+   - **Forecast Accuracy Tracking:** Stores forecast projections in `forecast_snapshots` and compares them against next-day station observations to compute grounded accuracy percentages. Honest "pending verification" state when prior snapshots are not yet recorded.
    - Interactive Chart.js comparative visualizations supporting 7-day and 30-day horizons with dual-city overlay.
-   - Transparent disclaimer: AI provides analytical insights and does not pretend to simulate numerical weather prediction (NWP) atmospheric physics.
 
-6. **Best-Time Planner & City Comparison**
-   - **Activity Planner:** Identifies optimal windows today for outdoor running, laundry drying, and commutes based on temperature, wind, humidity, and precipitation probability.
-   - **Direct City Comparison:** Dedicated side-by-side comparison screen (`/compare`) evaluating meteorological metrics and comfort ratings.
-
-7. **System Diagnostics & In-Browser Test Bench**
-   - Dedicated diagnostic center at `/test` and `/admin` displaying real-time database latency, cache hit rates, model configuration, and live simulator controls.
-   - One-click in-browser smoke test suite running real backend assertions.
-
-8. **Production Robustness & Security**
-   - **XSS-Safe PDF Exports:** Environmental PDF reports rendered through secure Jinja2 templates.
-   - **Authentication Protection:** Rigorous server-side signup validation, brute-force rate limits per IP and username, and instant demo login mode.
-   - **PWA & Offline Resilience:** Service worker registered at root `/sw.js` with offline fallback screen (`/offline.html`) and responsive manifest icons.
+7. **Authentication & Security**
+   - Dedicated **Login** page requiring only `Username` and `Password` (no demo accounts, no fake credentials).
+   - Unified login handlers eliminating duplicate route logic.
+   - Password confirmation validation and case-insensitive username/email uniqueness.
+   - Secure password hashing using Werkzeug scrypt/pbkdf2, session protection, and per-IP/username rate limiting.
+   - Post-login navigation redirects directly to the **Home page at `/`**.
+   - Formula-injection sanitized CSV exports escaping `=`, `+`, `-`, and `@`.
 
 ---
 
@@ -67,8 +63,8 @@ ClimaSense provides an immersive, data-grounded weather experience. Rather than 
 ```text
 ┌────────────────────────────────────────────────────────┐
 │                   Client Browser                       │
-│  Glassmorphic UI • 3D Tilt • Leaflet Map • Chart.js    │
-│  Dynamic Visual Effects • AI Chat • Socket.IO Client   │
+│  Pure Light UI • 3D Celestial • Leaflet Map • Chart.js │
+│  Dynamic Unsplash Hero • AI Chat • Socket.IO Client    │
 └───────────────────────────▲────────────────────────────┘
                             │ HTTP / WebSockets
 ┌───────────────────────────▼────────────────────────────┐
@@ -77,9 +73,9 @@ ClimaSense provides an immersive, data-grounded weather experience. Rather than 
 └───────┬──────────────┬──────────────┬───────────┬──────┘
         │              │              │           │
  ┌──────▼──────┐┌──────▼──────┐┌──────▼──────┐┌───▼──────────┐
- │ OpenWeather ││   Unsplash  ││Google Gemini││  PostgreSQL/ │
- │ Meteorological││ Scenery API ││ Generative ││    SQLite    │
- │   Network   ││ (No Wiki)   ││ Intelligence││  + Redis     │
+ │ OpenWeather ││   Unsplash  ││Google Gemini││    SQLite    │
+ │ Meteorological││ Scenery API ││ Generative ││  + Redis     │
+ │   Network   ││ Attributions││ Intelligence││  (Fallback)  │
  └─────────────┘└─────────────┘└─────────────┘└──────────────┘
 ```
 
@@ -87,14 +83,15 @@ ClimaSense provides an immersive, data-grounded weather experience. Rather than 
 
 ## ⚙️ Configuration Reference
 
-Create an `api.env` file in the root directory:
+Copy `.env.example` to `.env` or `api.env`:
 
 ```ini
 # Flask Core
 SECRET_KEY=your_strong_random_secret_key_here
 FLASK_ENV=development
+DATABASE_URL=sqlite:///app.db
 
-# External APIs
+# External APIs (Stored securely on backend)
 OPENWEATHER_API_KEY=your_openweather_api_key
 UNSPLASH_API_KEY=your_unsplash_api_key
 
@@ -103,19 +100,19 @@ AI_PROVIDER=gemini
 AI_API_KEY=your_gemini_api_key
 AI_MODEL=gemini-2.0-flash
 
-# Cache & Message Broker
+# Cache & Message Broker (Falls back to in-memory cache if Redis is absent)
 REDIS_URL=redis://localhost:6379/0
 CACHE_TTL_SECONDS=300
 ```
 
-> **Unsplash API Note:** The free demo tier has an hourly request limit, which is why successful images are cached for 24 hours. The app never falls back to Wikipedia; if an API call fails or quota is exhausted, curated Unsplash photos per weather mood are displayed with full photographer attribution and retried after 5 minutes.
+> **Security Note:** API keys are processed server-side only. Secrets are never exposed to browser JavaScript, HTML attributes, URLs, public API responses, or client-side diagnostics.
 
 ---
 
 ## 🚀 Installation & Local Setup
 
 ### 1. Prerequisites
-- Python 3.9+ or Python 3.10+
+- Python 3.8+ (tested on Python 3.8, 3.9, 3.10)
 - *(Optional)* Redis server (ClimaSense automatically falls back to an in-memory dictionary cache if Redis is not running).
 
 ### 2. Install Dependencies
@@ -123,77 +120,88 @@ CACHE_TTL_SECONDS=300
 pip install -r requirements.txt
 ```
 
-### 3. Run the Flask Web Server
+### 3. Environment Configuration
+Create your local environment file by copying the template:
+```bash
+cp .env.example .env
+```
+*(On Windows PowerShell, use `Copy-Item .env.example .env`)*
+
+Configure your API keys in `.env`:
+- `OPENWEATHER_API_KEY`: Real-time weather, forecasts, AQI, and UV data from [OpenWeatherMap](https://openweathermap.org/api).
+- `UNSPLASH_API_KEY`: Dynamic landmark and city photography from [Unsplash](https://unsplash.com/developers).
+- `AI_API_KEY`: Generative AI weather briefings and interactive assistant from [Google AI Studio](https://aistudio.google.com/).
+
+### 4. Database Initialization
+Database tables are created automatically when the application starts for the first time. To initialize or verify the SQLite database schema manually at any time:
+```bash
+python -c "from app import create_app; from extensions import db; app = create_app(); app.app_context().push(); db.create_all(); print('Database tables initialized successfully.')"
+```
+
+### 5. Run the Flask Web Server
 ```bash
 python app.py
 ```
 Open your browser and navigate to:
 ```text
-http://127.0.0.1:5000
+http://127.0.0.1:5000/
 ```
-Click **"Instant Demo Login"** on the login page for immediate access.
 
-### 4. Run Automated Tests
+### 6. Run Automated Regression Tests
+To run the full test suite with default warning investigation (zero uninvestigated warnings):
 ```bash
-python -m pytest
+python -m pytest -q -W default
 ```
 
-### Test Suite Summary:
-```text
-tests/test_ai.py ..........                                              [ 27%]
-tests/test_auth.py ....                                                  [ 37%]
-tests/test_full_phases.py .......                                        [ 56%]
-tests/test_history.py .                                                  [ 59%]
-tests/test_phase0.py ......                                              [ 75%]
-tests/test_weather.py .........                                          [100%]
-
-============================= 42 passed in 23.79s =============================
+### 7. Build Clean Distribution Archive
+To package a clean, production-ready distribution archive (`ClimaSense_clean.zip`) excluding all credentials, git history, runtime database, cache files, and nested archives:
+```bash
+python package_dist.py
 ```
 
 ---
 
-## 📡 API Endpoints Reference
+## 📡 Complete Page & Route Reference
 
 ### Web Pages
-- `GET /` - Login Page (with one-click instant demo)
-- `GET /signup` - User Registration Page
-- `GET /index` - Main Weather Dashboard
-- `GET /compare` - Side-by-Side City Comparison Page
-- `GET /test` or `/admin` - System Diagnostics & Test Bench Page
-- `GET /predictions` - Climate Analytics & Forecast Accuracy Tracker
-- `GET /trends` - Historical Trends & City Comparison
-- `GET /history` - User Search History (with empty state)
-- `GET /about` - Architecture & System Specifications
-- `GET /logout` - User Logout
+- `GET /` or `/home` — Public Welcoming Home & Discovery Page
+- `GET /login` — Clean Login Page (Username & Password only)
+- `GET /signup` — User Registration Page
+- `GET /weather` or `/index` — Main Weather Dashboard (Authenticated)
+- `GET /explore` — Cities Explorer Destination Discovery
+- `GET /compare` — Side-by-Side City Comparison Page
+- `GET /forecast/hourly` — Dedicated 24-Hour Hourly Forecast Page
+- `GET /forecast/weekly` — Dedicated 5- to 7-Day Extended Forecast Page
+- `GET /air-quality` — Dedicated Air Quality & UV Health Page
+- `GET /alerts` — Severe Weather Alerts & Advisories Page
+- `GET /history` — User Search History (Authenticated)
+- `GET /predictions` — Climate Analytics & Forecast Accuracy Tracker
+- `GET /trends` — Historical Meteorological Trends & City Variance
+- `GET /profile` — User Account Profile & Password Management (Authenticated)
+- `GET /settings` — User Preferences & Display Units (Authenticated)
+- `GET /about` — Architecture & System Specifications
+- `GET /help` — Help Center & FAQ
+- `GET /privacy` — Privacy Policy
+- `GET /terms` — Terms of Service
+- `GET /admin` or `/test` — Diagnostics & Interactive Test Bench (Authenticated)
+- `GET /logout` — User Sign Out
 
-### Operational & Diagnostic APIs
-- `GET /health` - Standardized health check for Docker and platforms
-- `GET /api/admin/metrics` - Live DB latency, cache hit rate, and AI provider status
-- `POST /api/admin/run-smoke-tests` - In-browser automated smoke test execution
-- `GET /api/dashboard/<city>` - Combined single-roundtrip dashboard payload
-- `GET /api/weather/<city>` - Current conditions, true rain probability, and comfort score
-- `GET /api/weather/<city>/briefing` - Grounded Gemini AI Weather Briefing
-- `POST /api/weather/chat` - Conversational Weather Assistant
-- `GET /api/forecast/<city>` - 5-Day and 24-Hour hourly forecast with timezone alignment
-- `GET /api/aqi` - Air Quality Index & true dominant pollutant ratio calculation
-- `GET /api/uv` - Real-time UV exposure and risk category
-- `GET /api/alerts` - Severe weather alerts (clearly distinguishing inferred vs official)
-- `GET /api/background/<city>` - Unsplash scenic photography
-- `GET /api/weather/<city>/export/pdf` - XSS-safe printable PDF environmental report
-- `GET /api/weather/<city>/export/csv` - Download CSV environmental report
+### Operational & Meteorological APIs
+- `GET /health` or `/api/health` — Standardized health check for Docker and platforms
+- `GET /api/background/<city>` — Dynamic rotating Unsplash background photograph of famous landmarks and scenic destinations with verified photographer attribution
+- `GET /api/weather/<city>` — Current conditions, feels-like, rain probability, and comfort score
+- `GET /api/forecast/<city>` — 5-Day and 24-Hour hourly forecast with timezone alignment
+- `GET /api/aqi?lat=<lat>&lon=<lon>` — Air Quality Index & dominant pollutant calculation
+- `GET /api/uv?lat=<lat>&lon=<lon>` — Real-time UV exposure and risk category
+- `GET /api/alerts?lat=<lat>&lon=<lon>` — Severe weather alerts
+- `GET /api/weather/<city>/briefing` — Grounded Gemini AI Weather Briefing
+- `POST /api/weather/chat` — Conversational Weather Assistant
+- `GET /api/dashboard/<city>` — Combined single-roundtrip dashboard payload
+- `POST /api/admin/run-smoke-tests` — In-browser automated smoke test execution
 
-
----
-
-## 📑 Project Engineering Reports & Documentation
-
-- 📄 **Complete Markdown Project Report (32 Sections):** [`CLIMASENSE_PROJECT_REPORT.md`](CLIMASENSE_PROJECT_REPORT.md)
-- 📑 **Official PDF Project Engineering Report:** [`CLIMASENSE_PROJECT_REPORT.pdf`](CLIMASENSE_PROJECT_REPORT.pdf)
-- 🎨 **Visual Design Mockup References:** [`docs/design_references/`](docs/design_references/)
-
-### 📊 Real Meteorological CSV Export Endpoints (Formula-Safe)
+### Real Meteorological CSV Export Endpoints (Formula-Injection Protected)
 - `GET /api/weather/<city>/export/csv` — Current Observed Weather CSV (`climasense_current_weather_{city}.csv`)
 - `GET /api/forecast/<city>/export/hourly/csv` — 24-Hour Hourly Timeline CSV (`climasense_hourly_forecast_{city}.csv`)
-- `GET /api/forecast/<city>/export/weekly/csv` — 7-Day Extended Outlook CSV (`climasense_weekly_forecast_{city}.csv`)
+- `GET /api/forecast/<city>/export/weekly/csv` — 5-Day Extended Outlook CSV (`climasense_weekly_forecast_{city}.csv`)
 - `GET /api/compare/export/csv?city1=<c1>&city2=<c2>` — Direct City Comparison CSV (`climasense_comparison.csv`)
 - `GET /api/history/export/csv` — Authenticated User Search Telemetry CSV (`climasense_search_history.csv`)

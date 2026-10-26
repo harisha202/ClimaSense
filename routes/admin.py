@@ -5,7 +5,7 @@ from models.user import User
 from models.weather_log import WeatherLog
 from models.forecast_snapshot import ForecastSnapshot
 from models.saved_city import SavedCity
-from extensions import db, redis_client
+from extensions import db, get_redis_client
 import time
 
 admin_bp = Blueprint('admin', __name__)

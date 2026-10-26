@@ -22,7 +22,7 @@ from services.planner_service import generate_activity_plans
 from services.encyclopedia_service import get_city_encyclopedia
 from models.search_history import SearchHistory
 from models.weather_log import WeatherLog
-from extensions import db, redis_client
+from extensions import db, get_redis_client
 from models.saved_city import SavedCity
 from services.ai_service import calculate_comfort_score, get_weather_briefing, answer_weather_chat
 
@@ -34,29 +34,23 @@ def get_current_weather(city):
 def get_weather_by_coords(lat, lon):
     return openweather_service.get_weather_by_coords(lat, lon)
 
-@weather_bp.route('/')
 @weather_bp.route('/home')
+@weather_bp.route('/')
 def home():
     """Page 00: Welcoming ClimaSense Home & Discovery Page matching master screenshot reference."""
     return render_template('home.html')
 
 @weather_bp.route('/weather')
-def weather():
-    """Page 05: Live Weather Dashboard redirect or direct view"""
-    return render_template('index.html')
-
 @weather_bp.route('/index')
 @login_required
 def index():
     return render_template('index.html')
 
 @weather_bp.route('/compare')
-@login_required
 def compare():
     return render_template('compare.html')
 
 @weather_bp.route('/explore')
-@login_required
 def explore():
     """Page 06: Cities Explorer destination discovery"""
     destinations = [
@@ -118,7 +112,6 @@ def weekly_forecast_page():
 
 
 @weather_bp.route('/api/weather/<city>')
-@login_required
 def api_weather(city):
     data = get_current_weather(city)
     if data:
@@ -133,24 +126,25 @@ def api_weather(city):
             if aqi_res and 'list' in aqi_res and aqi_res['list']:
                 aqi_val = aqi_res['list'][0].get('main', {}).get('aqi', 1)
 
-        # Deduplicate search history (skip duplicate searches for the same city within 5 minutes)
-        recent_search = SearchHistory.query.filter_by(user_id=current_user.id, city=data['name'])\
-            .order_by(SearchHistory.searched_at.desc()).first()
-        if not recent_search or (datetime.utcnow() - recent_search.searched_at).total_seconds() > 300:
-            history = SearchHistory(user_id=current_user.id, city=data['name'])
-            db.session.add(history)
+        # Deduplicate search history (skip duplicate searches for the same city within 5 minutes) if authenticated
+        if current_user.is_authenticated:
+            recent_search = SearchHistory.query.filter_by(user_id=current_user.id, city=data['name'])\
+                .order_by(SearchHistory.searched_at.desc()).first()
+            if not recent_search or (datetime.utcnow() - recent_search.searched_at).total_seconds() > 300:
+                history = SearchHistory(user_id=current_user.id, city=data['name'])
+                db.session.add(history)
         
         # Log for trends with AQI included
         log = WeatherLog(
             city=data['name'],
             temperature=data['main']['temp'],
-            feels_like=data['main']['feels_like'],
+            feels_like=data['main'].get('feels_like', data['main']['temp']),
             humidity=data['main']['humidity'],
             pressure=data['main']['pressure'],
             wind_speed=data['wind']['speed'],
             aqi=aqi_val,
             description=data['weather'][0]['description'] if data.get('weather') else '',
-            icon=data['weather'][0]['icon'] if data.get('weather') else '01d'
+            icon=data['weather'][0].get('icon', '01d') if data.get('weather') else '01d'
         )
         db.session.add(log)
         db.session.commit()
@@ -172,7 +166,7 @@ def api_weather(city):
             elif 'drizzle' in desc_lower:
                 rain_prob = 40
             else:
-                rain_prob = 0
+                rain_prob = None
             
         # Grounded comfort score with air quality factored in
         comfort = calculate_comfort_score(
@@ -232,7 +226,8 @@ def api_combined_dashboard(city):
     uv_data = openweather_service.get_uv_index(lat, lon) if (lat and lon) else None
     desc = data['weather'][0]['description'] if data.get('weather') else ''
 
-    background = get_background_image(city, desc)
+    country = data.get('sys', {}).get('country', '')
+    background = get_background_image(city, desc, country=country)
     briefing = get_weather_briefing(city)
     planner = generate_activity_plans(forecast, data) if forecast else None
 
@@ -273,7 +268,8 @@ def api_weather_chat():
     city = payload.get('city', 'Bengaluru').strip()
     if not message:
         return jsonify({'success': False, 'message': 'Message cannot be empty.'}), 400
-    res = answer_weather_chat(message, current_city=city, user_id=current_user.id)
+    history = payload.get('history', [])
+    res = answer_weather_chat(message, current_city=city, user_id=current_user.id, history=history)
     return jsonify(res)
 
 @weather_bp.route('/api/weather/recent')
@@ -289,7 +285,6 @@ def get_recent_searches():
     return jsonify({'success': True, 'recent': unique_cities})
 
 @weather_bp.route('/api/weather/<city>/export/csv')
-@login_required
 def export_weather_csv(city):
     """
     Exports verified current weather observations to CSV.
@@ -327,7 +322,7 @@ def export_weather_csv(city):
     ])
     
     clean_city = re.sub(r'[^a-zA-Z0-9_-]', '_', city.lower())
-    response = Response(output.getvalue(), mimetype='text/csv; charset=utf-8')
+    response = Response(output.getvalue(), mimetype='text/csv')
     response.headers['Content-Disposition'] = f'attachment; filename=climasense_current_weather_{clean_city}.csv'
     return response
 
@@ -379,11 +374,12 @@ def api_weather_geo():
         return jsonify({'success': True, 'data': data})
     return jsonify({'success': False, 'message': 'Location not found or API error'}), 404
 
+@weather_bp.route('/api/background', defaults={'city': '', 'description': ''}, strict_slashes=False)
 @weather_bp.route('/api/background/<city>', defaults={'description': ''}, strict_slashes=False)
 @weather_bp.route('/api/background/<city>/<description>', strict_slashes=False)
-@login_required
-def api_background(city, description=''):
-    bg_data = get_background_image(city, description)
+def api_background(city='', description=''):
+    country = request.args.get('country', '').strip()
+    bg_data = get_background_image(city, description, country=country)
     if isinstance(bg_data, dict):
         return jsonify({'success': True, **bg_data})
     return jsonify({'success': True, 'url': bg_data})
@@ -452,7 +448,6 @@ def proxy_tiles(layer, z, x, y):
         return Response(status=404)
 
 @weather_bp.route('/api/uv')
-@login_required
 def api_uv():
     lat = request.args.get('lat')
     lon = request.args.get('lon')
@@ -461,7 +456,7 @@ def api_uv():
     data = openweather_service.get_uv_index(lat, lon)
     uvi = data.get('value', 5.0) if data else 5.0
     category = "Low" if uvi < 3 else "Moderate" if uvi < 6 else "High" if uvi < 8 else "Very High"
-    return jsonify({'success': True, 'uvi': uvi, 'category': category})
+    return jsonify({'success': True, 'uvi': uvi, 'uv_index': uvi, 'category': category})
 
 @weather_bp.route('/api/system-status')
 @login_required
@@ -480,9 +475,10 @@ def api_system_status():
 
     # Check Redis cache
     cache_status = 'Fallback (Memory)'
-    if redis_client:
+    r_client = get_redis_client()
+    if r_client:
         try:
-            redis_client.ping()
+            r_client.ping()
             cache_status = 'Online (Redis)'
         except Exception:
             cache_status = 'Degraded'
@@ -519,21 +515,25 @@ def api_system_status():
     })
 
 @weather_bp.route('/api/encyclopedia/<city>')
+@weather_bp.route('/api/city-info/<city>')
 def api_encyclopedia(city):
     """
     Returns structured 38-section municipal encyclopedia targeting 4,000+ words
     with citations and verified word count badge.
     """
-    article = get_city_encyclopedia(city)
+    country = request.args.get('country', '').strip()
+    from services.encyclopedia_service import fetch_wikipedia_summary
+    info = fetch_wikipedia_summary(city, country=country)
+    article = get_city_encyclopedia(city, country=country)
     return jsonify({
         'success': True,
         'city': city,
-        'article': article
+        'article': article,
+        'info': info
     })
 
 
 @weather_bp.route('/api/compare/export/csv')
-@login_required
 def export_comparison_csv():
     """
     Exports side-by-side city comparison measurements to CSV.
@@ -579,6 +579,6 @@ def export_comparison_csv():
     cond2 = data2['weather'][0]['description'].title() if data2.get('weather') else 'N/A'
     writer.writerow(['Weather Condition', 'Text', sanitize_csv_cell(cond1), sanitize_csv_cell(cond2), 'N/A'])
     
-    response = Response(output.getvalue(), mimetype='text/csv; charset=utf-8')
+    response = Response(output.getvalue(), mimetype='text/csv')
     response.headers['Content-Disposition'] = 'attachment; filename=climasense_comparison.csv'
     return response

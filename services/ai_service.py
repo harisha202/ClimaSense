@@ -449,7 +449,7 @@ def _word_in(pattern, text):
     """Whole-word regex search to avoid substring bugs (e.g. 'train' vs 'rain', 'brunch' vs 'run')."""
     return bool(re.search(r'\b' + pattern + r'\b', text, re.IGNORECASE))
 
-def answer_weather_chat(user_question, current_city='Bengaluru', user_id=None):
+def answer_weather_chat(user_question, current_city='Bengaluru', user_id=None, history=None):
     """
     Handles conversational questions grounded in real weather data.
     """
@@ -493,6 +493,17 @@ def answer_weather_chat(user_question, current_city='Bengaluru', user_id=None):
     model_name = current_app.config.get('AI_MODEL', 'gemini-2.0-flash')
     
     if api_key and is_valid_gemini_key(api_key):
+        history_context = ""
+        if history and isinstance(history, list):
+            history_lines = []
+            for h in history[-6:]:
+                role = str(h.get('role', 'user')).capitalize()
+                content = str(h.get('content', '')).strip()
+                if content:
+                    history_lines.append(f"{role}: {content}")
+            if history_lines:
+                history_context = "\nCONVERSATION HISTORY (max 6 turns):\n" + "\n".join(history_lines) + "\n"
+
         prompt = f"""You are ClimaSense Weather AI Assistant. Answer the user's weather question accurately, concisely, and supportively.
 CRITICAL SAFETY & GROUNDING RULES:
 1. Rely ONLY on the provided REAL WEATHER DATA below.
@@ -500,7 +511,7 @@ CRITICAL SAFETY & GROUNDING RULES:
 3. If the user asks about dates beyond the available 5-day forecast horizon, explicitly explain that live weather forecasts are limited to 5 days ahead, and provide what is known.
 4. If comparing multiple cities, compare their temperature, conditions, and rain probabilities directly based on the data. Put each city on its own bullet point.
 5. If user asks about drying clothes or outdoor exercise, recommend specific times based on the hourly forecast.
-
+{history_context}
 USER QUESTION:
 "{cleaned_question}"
 

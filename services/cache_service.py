@@ -1,7 +1,7 @@
 import json
 import time
 from flask import current_app
-from extensions import redis_client
+from extensions import get_redis_client
 
 # In-memory dictionary for fallback when Redis isn't running
 _fallback_cache = {}
@@ -18,12 +18,13 @@ def get_cache_stats():
     """Returns runtime cache hit/miss diagnostic metrics."""
     total = _cache_stats['hits'] + _cache_stats['misses']
     hit_rate = round((_cache_stats['hits'] / total * 100), 1) if total > 0 else 100.0
+    client = get_redis_client()
     return {
         'hits': _cache_stats['hits'],
         'misses': _cache_stats['misses'],
         'sets': _cache_stats['sets'],
         'hit_rate_pct': hit_rate,
-        'entries_count': len(_fallback_cache) if not redis_client else 'Managed by Redis'
+        'entries_count': len(_fallback_cache) if not client else 'Managed by Redis'
     }
 
 def _clean_fallback_cache():
@@ -42,7 +43,8 @@ def _clean_fallback_cache():
 def cache_get(key):
     """Checks cache for a value. Returns dict, list, primitive, or None."""
     global _fallback_cache
-    if not redis_client:
+    client = get_redis_client()
+    if not client:
         if key in _fallback_cache:
             entry = _fallback_cache[key]
             if time.time() < entry['expires_at']:
@@ -54,7 +56,7 @@ def cache_get(key):
         return None
         
     try:
-        val = redis_client.get(key)
+        val = client.get(key)
         if val:
             _cache_stats['hits'] += 1
             return json.loads(val)
@@ -70,8 +72,9 @@ def cache_set(key, value, ttl=None):
         ttl = current_app.config.get('CACHE_TTL_SECONDS', 300)
         
     _cache_stats['sets'] += 1
+    client = get_redis_client()
 
-    if not redis_client:
+    if not client:
         _clean_fallback_cache()
         _fallback_cache[key] = {
             'data': value,
@@ -80,7 +83,7 @@ def cache_set(key, value, ttl=None):
         return True
         
     try:
-        redis_client.setex(key, ttl, json.dumps(value))
+        client.setex(key, ttl, json.dumps(value))
         return True
     except Exception as e:
         current_app.logger.warning(f"Redis set error for {key}: {e}")
@@ -93,13 +96,14 @@ def cache_set(key, value, ttl=None):
 
 def cache_delete(key):
     """Removes a cached value."""
-    if not redis_client:
+    client = get_redis_client()
+    if not client:
         if key in _fallback_cache:
             del _fallback_cache[key]
         return True
         
     try:
-        redis_client.delete(key)
+        client.delete(key)
         return True
     except Exception as e:
         current_app.logger.warning(f"Redis delete error for {key}: {e}")

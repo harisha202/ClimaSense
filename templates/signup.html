@@ -78,11 +78,20 @@
         font-size: 1rem;
         transition: all var(--transition-fast);
         box-shadow: 0 4px 14px rgba(49, 133, 214, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
     }
 
-    .auth-btn:hover {
+    .auth-btn:hover:not(:disabled) {
         background: var(--blue-deep);
         transform: translateY(-2px);
+    }
+
+    .auth-btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
     }
 
     .strength-bar {
@@ -103,26 +112,29 @@
         <form id="signup-form">
             <div class="form-group">
                 <label for="username">Username (3-30 chars)</label>
-                <input type="text" id="username" class="form-input" required minlength="3" maxlength="30" placeholder="e.g. climate_watcher">
+                <input type="text" id="username" class="form-input" required minlength="3" maxlength="30" placeholder="e.g. climate_watcher" autocomplete="username">
             </div>
             <div class="form-group">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" class="form-input" required placeholder="name@example.com">
+                <input type="email" id="email" class="form-input" required placeholder="name@example.com" autocomplete="email">
             </div>
             <div class="form-group">
                 <label for="password">Password (min 8 chars, mixed)</label>
-                <input type="password" id="password" class="form-input" required minlength="8" placeholder="••••••••">
+                <input type="password" id="password" class="form-input" required minlength="8" placeholder="••••••••" autocomplete="new-password">
                 <div class="strength-bar" id="strength-meter"></div>
                 <div id="strength-text" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;"></div>
             </div>
             <div class="form-group">
                 <label for="confirm_password">Confirm Password</label>
-                <input type="password" id="confirm_password" class="form-input" required minlength="8" placeholder="••••••••">
+                <input type="password" id="confirm_password" class="form-input" required minlength="8" placeholder="••••••••" autocomplete="new-password">
             </div>
-            <div id="signup-error" class="error-msg text-danger hidden mt-2" style="color: var(--danger); font-size: 0.9rem;"></div>
-            <button type="submit" class="auth-btn mt-4">Create Free Account</button>
+            <div id="signup-error" class="error-msg text-danger {% if not error %}hidden{% endif %} mt-2" style="color: var(--danger); font-size: 0.9rem;">{{ error or "" }}</div>
+            <div id="signup-success" class="hidden mt-2" style="color: var(--green-deep); font-size: 0.95rem; font-weight: 600; text-align: center;"></div>
+            <button type="submit" id="signup-submit-btn" class="auth-btn mt-4">
+                <span>Create Free Account</span>
+            </button>
         </form>
-        <a href="{{ url_for('auth.show_login') }}" style="display: block; text-align: center; margin-top: 1.25rem; color: var(--blue-primary); text-decoration: none; font-weight: 600;">Already have an account? Log in</a>
+        <a href="{{ url_for('auth.show_login') }}" style="display: block; text-align: center; margin-top: 1.25rem; color: var(--blue-primary); text-decoration: none; font-weight: 600;">Already have an account? Sign in</a>
     </div>
 </div>
 {% endblock %}
@@ -167,20 +179,37 @@ passEl.addEventListener('input', () => {
     }
 });
 
+let isSigningUp = false;
 document.getElementById('signup-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const u = document.getElementById('username').value;
-    const em = document.getElementById('email').value;
+    if (isSigningUp) return;
+
+    const u = document.getElementById('username').value.trim();
+    const em = document.getElementById('email').value.trim();
     const p = document.getElementById('password').value;
     const cp = document.getElementById('confirm_password').value;
     const err = document.getElementById('signup-error');
+    const succ = document.getElementById('signup-success');
+    const submitBtn = document.getElementById('signup-submit-btn');
+
     err.classList.add('hidden');
+    succ.classList.add('hidden');
+
+    if (!u || !em || !p) {
+        err.textContent = 'Please fill in all required fields.';
+        err.classList.remove('hidden');
+        return;
+    }
 
     if (p !== cp) {
         err.textContent = 'Passwords do not match.';
         err.classList.remove('hidden');
         return;
     }
+
+    isSigningUp = true;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Creating Account...</span>';
 
     try {
         const res = await fetch('/signup', {
@@ -190,14 +219,24 @@ document.getElementById('signup-form').addEventListener('submit', async (e) => {
         });
         const data = await res.json();
         if (data.success) {
-            window.location.href = '/index';
+            succ.textContent = 'Registration successful! Redirecting to login...';
+            succ.classList.remove('hidden');
+            setTimeout(() => {
+                window.location.href = data.redirect || '/login';
+            }, 1000);
         } else {
             err.textContent = data.message || 'Signup failed';
             err.classList.remove('hidden');
+            isSigningUp = false;
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Create Free Account</span>';
         }
     } catch(e) {
-        err.textContent = 'Server connection error';
+        err.textContent = 'Server connection error. Please try again.';
         err.classList.remove('hidden');
+        isSigningUp = false;
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Create Free Account</span>';
     }
 });
 </script>

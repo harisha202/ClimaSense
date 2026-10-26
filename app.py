@@ -1,6 +1,16 @@
 import eventlet
 eventlet.monkey_patch()
 
+# Suppress dnspython Resolver.query DeprecationWarning emitted via eventlet
+try:
+    import dns.resolver
+    def _safe_resolver_query(self, *args, **kwargs):
+        kwargs.pop('raise_on_no_answer', None)
+        return self.resolve(*args, **kwargs)
+    dns.resolver.Resolver.query = _safe_resolver_query
+except Exception:
+    pass
+
 import os
 from flask import Flask, redirect, url_for, render_template
 from config import config_dict
@@ -25,11 +35,12 @@ def create_app(config_name='default'):
     login_manager.login_message = "Please log in to access this page."
     mail.init_app(app)
     init_redis(app)
-    from extensions import redis_client
+    from extensions import get_redis_client
+    redis_instance = get_redis_client()
 
     # Socket.IO Origin restriction
     allowed_origins = "*" if app.config.get('DEBUG') else os.getenv('ALLOWED_ORIGINS', '*')
-    socketio.init_app(app, cors_allowed_origins=allowed_origins, message_queue=app.config.get('REDIS_URL') if redis_client else None)
+    socketio.init_app(app, cors_allowed_origins=allowed_origins, message_queue=app.config.get('REDIS_URL') if redis_instance else None)
     
     # User loader callback for Flask-Login
     @login_manager.user_loader

@@ -6,22 +6,24 @@
 <!-- ============================================================
      HERO SECTION (Matching Master Reference Screenshot)
      ============================================================ -->
-<section class="home-hero-section">
+<section class="home-hero-section" id="home-hero-section">
     <div class="home-hero-bg-overlay"></div>
 
     <div class="home-hero-content">
-        <!-- Floating Celestial Sticker ("Better Weather Brighter Days") -->
-        <div class="home-hero-celestial">
-            <div class="celestial-sun-glow"></div>
-            <div class="celestial-sun-3d">
-                <i class="fa-solid fa-sun"></i>
+        <!-- Neat Feature Highlight Card -->
+        <div class="home-hero-badge-card glass" style="display: flex; flex-direction: column; gap: 0.75rem; padding: 1.5rem; border-radius: var(--radius-xl); background: rgba(255, 255, 255, 0.92); border: 1px solid var(--border-subtle); box-shadow: var(--shadow-card); max-width: 280px;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 44px; height: 44px; border-radius: var(--radius-pill); background: var(--blue-pale); display: flex; align-items: center; justify-content: center; color: var(--blue-primary); font-size: 1.25rem;">
+                    <i class="fa-solid fa-cloud-sun"></i>
+                </div>
+                <div>
+                    <strong style="color: var(--text-heading); font-size: 1rem; display: block;">ClimaSense Live</strong>
+                    <span style="font-size: 0.8rem; color: var(--text-secondary);">Real-Time Intelligence</span>
+                </div>
             </div>
-            <div class="celestial-cloud-3d">
-                <i class="fa-solid fa-cloud"></i>
-            </div>
-            <div class="celestial-sticker-text">
-                Better<br>Weather<br>Brighter<br>Days
-            </div>
+            <p style="font-size: 0.85rem; color: var(--text-body); margin: 0; line-height: 1.5;">
+                Accurate telemetry, grounded AI briefings & high-resolution city photography.
+            </p>
         </div>
 
         <div class="home-hero-text-block">
@@ -58,6 +60,14 @@
                 </div>
             </div>
         </div>
+    </div>
+    <!-- Dynamic Unsplash Photographer Attribution Badge -->
+    <div id="hero-photographer-attribution" class="hero-attribution-badge">
+        <i class="fa-brands fa-unsplash" style="color: #111;"></i>
+        <span>Photo by</span>
+        <a id="hero-photographer-link" href="https://unsplash.com?utm_source=ClimaSense&utm_medium=referral" target="_blank" rel="noopener">Unsplash Community</a>
+        <span>on</span>
+        <a href="https://unsplash.com?utm_source=ClimaSense&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>
     </div>
 </section>
 
@@ -401,7 +411,7 @@
                     <i class="fa-solid fa-arrow-right climate-item-arrow"></i>
                 </a>
 
-                <a href="{{ url_for('about.about') }}" class="home-climate-item">
+                <a href="{{ url_for('weather.explore') }}" class="home-climate-item">
                     <div class="climate-item-left">
                         <div class="climate-item-icon" style="color: #8B5CF6; background: #EDE9FE;">
                             <i class="fa-solid fa-lightbulb"></i>
@@ -429,7 +439,6 @@
         </div>
 
         <div class="home-footer-links">
-            <a href="{{ url_for('about.about') }}">About</a>
             <a href="{{ url_for('weather.help_faq') }}">Help</a>
             <a href="{{ url_for('weather.privacy') }}">Privacy</a>
             <a href="{{ url_for('weather.terms') }}">Terms</a>

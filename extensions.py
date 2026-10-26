@@ -18,7 +18,13 @@ def init_redis(app):
     try:
         redis_client = redis.from_url(app.config['REDIS_URL'])
         redis_client.ping()
+        return redis_client
     except Exception:
         # Silently fail and log a friendly info message rather than a scary socket error
         app.logger.info("ℹ️ Redis not detected locally. Falling back to in-memory dictionary cache.")
         redis_client = None
+        return None
+
+def get_redis_client():
+    global redis_client
+    return redis_client

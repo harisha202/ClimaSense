@@ -47,7 +47,6 @@ def determine_dominant_pollutant(components):
     return f"{display_name} ({round(dominant_val, 1)} µg/m³)", dominant_key
 
 @aqi_bp.route('/api/aqi')
-@login_required
 def api_aqi():
     lat = request.args.get('lat')
     lon = request.args.get('lon')

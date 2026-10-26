@@ -23,3 +23,7 @@ htmlcov/
 *.sqlite3
 *.db
 *.zip
+
+# Temporary scratch & build artifacts
+scratch/
+dist_staging/

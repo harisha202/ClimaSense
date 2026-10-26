@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, current_app
-from extensions import db, redis_client
+from extensions import db, get_redis_client
 import time
 
 health_bp = Blueprint('health', __name__)
@@ -28,9 +28,10 @@ def health_check():
         healthy = False
 
     # 2. Redis / Cache check
-    if redis_client:
+    client = get_redis_client()
+    if client:
         try:
-            redis_client.ping()
+            client.ping()
             status['checks']['cache'] = {'status': 'up', 'provider': 'Redis'}
         except Exception as e:
             status['checks']['cache'] = {'status': 'degraded', 'error': 'Redis unreachable; using in-memory fallback'}

@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container" style="max-width: 1200px; margin: 2rem auto; padding: 0 1rem;">
     <!-- Comparison Header -->
-    <div class="glass" style="padding: 2rem 2.5rem; margin-bottom: 2rem; text-align: center; border-radius: var(--radius-xl);">
+    <div class="glass" style="padding: 2rem 2.5rem; margin-bottom: 2rem; text-align: center; border-radius: var(--radius-xl); background: var(--surface-card); border: 1px solid var(--border-subtle);">
         <h1 style="font-size: 2rem; color: var(--text-heading); margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.8rem;">
             <i class="fa-solid fa-code-compare" style="color: var(--blue-primary);"></i> Multi-City Direct Comparison
         </h1>
@@ -15,89 +15,91 @@
 
         <!-- Input Bar -->
         <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; max-width: 750px; margin: 0 auto;">
-            <input type="text" id="comp-city-1" placeholder="City 1 (e.g. Bengaluru)" value="Bengaluru" style="flex: 1; min-width: 220px; padding: 0.9rem 1.25rem; border-radius: var(--radius-pill); border: 2px solid var(--border-subtle); background: var(--surface-input); color: var(--text-heading); font-size: 1rem; outline: none;">
-            <input type="text" id="comp-city-2" placeholder="City 2 (e.g. Mysuru)" value="Mysuru" style="flex: 1; min-width: 220px; padding: 0.9rem 1.25rem; border-radius: var(--radius-pill); border: 2px solid var(--border-subtle); background: var(--surface-input); color: var(--text-heading); font-size: 1rem; outline: none;">
+            <input type="text" id="comp-city-1" placeholder="City 1 (e.g. London)" value="London" style="flex: 1; min-width: 200px; padding: 0.9rem 1.25rem; border-radius: var(--radius-pill); border: 2px solid var(--border-subtle); background: var(--surface-input); color: var(--text-heading); font-size: 1rem; outline: none;">
+            <input type="text" id="comp-city-2" placeholder="City 2 (e.g. Paris)" value="Paris" style="flex: 1; min-width: 200px; padding: 0.9rem 1.25rem; border-radius: var(--radius-pill); border: 2px solid var(--border-subtle); background: var(--surface-input); color: var(--text-heading); font-size: 1rem; outline: none;">
             <button id="compare-btn" class="search-btn" style="padding: 0.9rem 2rem; border-radius: var(--radius-pill);">
                 <i class="fa-solid fa-arrows-split-up-and-left"></i> Compare
             </button>
-            <a id="export-compare-csv-btn" href="/api/compare/export/csv?city1=Bengaluru&city2=Mysuru" class="export-csv-btn" style="padding: 0.85rem 1.4rem; font-size: 0.95rem; border-radius: var(--radius-pill);">
+            <a id="export-compare-csv-btn" href="/api/compare/export/csv?city1=London&city2=Paris" class="export-csv-btn" style="padding: 0.85rem 1.4rem; font-size: 0.95rem; border-radius: var(--radius-pill);">
                 <i class="fa-solid fa-file-csv"></i> Export Comparison CSV
             </a>
         </div>
+        
+        <div id="comp-error-banner" class="hidden" style="margin-top: 1rem; padding: 0.75rem 1.25rem; border-radius: var(--radius-pill); background: var(--danger-pale); color: var(--danger); font-weight: 600; font-size: 0.92rem;"></div>
     </div>
 
     <!-- Comparison Cards Grid -->
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.75rem; margin-bottom: 2rem;">
         <!-- City 1 Card -->
-        <div class="glass" id="card-city-1" style="padding: 2rem; border-top: 5px solid var(--blue-primary); border-radius: var(--radius-lg);">
+        <div class="glass" id="card-city-1" style="padding: 2rem; border-top: 5px solid var(--blue-primary); border-radius: var(--radius-lg); background: var(--surface-card); border: 1px solid var(--border-subtle);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h2 id="c1-name" style="font-size: 1.6rem; margin: 0; color: var(--text-heading);">Bengaluru</h2>
-                <span id="c1-country" style="background: var(--blue-pale); color: var(--blue-deep); padding: 0.25rem 0.75rem; border-radius: var(--radius-pill); font-size: 0.85rem; font-weight: 700;">IN</span>
+                <h2 id="c1-name" style="font-size: 1.6rem; margin: 0; color: var(--text-heading);">London</h2>
+                <span id="c1-country" style="background: var(--blue-pale); color: var(--blue-deep); padding: 0.25rem 0.75rem; border-radius: var(--radius-pill); font-size: 0.85rem; font-weight: 700;">--</span>
             </div>
             <div style="display: flex; align-items: baseline; gap: 0.8rem; margin-bottom: 1.25rem;">
-                <span id="c1-temp" style="font-size: 3.25rem; font-weight: 800; color: var(--blue-deep);">24°C</span>
-                <span id="c1-desc" style="font-size: 1.15rem; color: var(--blue-primary); text-transform: capitalize; font-weight: 600;">Clear Sky</span>
+                <span id="c1-temp" style="font-size: 3.25rem; font-weight: 800; color: var(--blue-deep);">--°C</span>
+                <span id="c1-desc" style="font-size: 1.15rem; color: var(--blue-primary); text-transform: capitalize; font-weight: 600;">Loading...</span>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 0.85rem;">
                 <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);">
                     <span style="color: var(--text-secondary);"><i class="fa-solid fa-temperature-half" style="margin-right: 6px; color: var(--blue-primary);"></i> Feels Like</span>
-                    <strong id="c1-feels" style="color: var(--text-heading);">24.5°C</strong>
+                    <strong id="c1-feels" style="color: var(--text-heading);">--°C</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);">
                     <span style="color: var(--text-secondary);"><i class="fa-solid fa-droplet" style="margin-right: 6px; color: var(--blue-secondary);"></i> Humidity</span>
-                    <strong id="c1-hum" style="color: var(--text-heading);">55%</strong>
+                    <strong id="c1-hum" style="color: var(--text-heading);">--%</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);">
                     <span style="color: var(--text-secondary);"><i class="fa-solid fa-wind" style="margin-right: 6px; color: var(--blue-primary);"></i> Wind Speed</span>
-                    <strong id="c1-wind" style="color: var(--text-heading);">3.2 m/s</strong>
+                    <strong id="c1-wind" style="color: var(--text-heading);">-- m/s</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);">
                     <span style="color: var(--text-secondary);"><i class="fa-solid fa-heart-pulse" style="margin-right: 6px; color: var(--green-accent);"></i> Comfort Score</span>
-                    <strong id="c1-comfort" style="color: var(--green-deep); font-weight: 700;">88 (Optimal)</strong>
+                    <strong id="c1-comfort" style="color: var(--green-deep); font-weight: 700;">--</strong>
                 </div>
             </div>
         </div>
 
         <!-- City 2 Card -->
-        <div class="glass" id="card-city-2" style="padding: 2rem; border-top: 5px solid var(--blue-secondary); border-radius: var(--radius-lg);">
+        <div class="glass" id="card-city-2" style="padding: 2rem; border-top: 5px solid var(--blue-secondary); border-radius: var(--radius-lg); background: var(--surface-card); border: 1px solid var(--border-subtle);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h2 id="c2-name" style="font-size: 1.6rem; margin: 0; color: var(--text-heading);">Mysuru</h2>
-                <span id="c2-country" style="background: var(--blue-pale); color: var(--blue-deep); padding: 0.25rem 0.75rem; border-radius: var(--radius-pill); font-size: 0.85rem; font-weight: 700;">IN</span>
+                <h2 id="c2-name" style="font-size: 1.6rem; margin: 0; color: var(--text-heading);">Paris</h2>
+                <span id="c2-country" style="background: var(--blue-pale); color: var(--blue-deep); padding: 0.25rem 0.75rem; border-radius: var(--radius-pill); font-size: 0.85rem; font-weight: 700;">--</span>
             </div>
             <div style="display: flex; align-items: baseline; gap: 0.8rem; margin-bottom: 1.25rem;">
-                <span id="c2-temp" style="font-size: 3.25rem; font-weight: 800; color: var(--blue-secondary);">26°C</span>
-                <span id="c2-desc" style="font-size: 1.15rem; color: var(--blue-secondary); text-transform: capitalize; font-weight: 600;">Scattered Clouds</span>
+                <span id="c2-temp" style="font-size: 3.25rem; font-weight: 800; color: var(--blue-secondary);">--°C</span>
+                <span id="c2-desc" style="font-size: 1.15rem; color: var(--blue-secondary); text-transform: capitalize; font-weight: 600;">Loading...</span>
             </div>
 
             <div style="display: flex; flex-direction: column; gap: 0.85rem;">
                 <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);">
                     <span style="color: var(--text-secondary);"><i class="fa-solid fa-temperature-half" style="margin-right: 6px; color: var(--blue-primary);"></i> Feels Like</span>
-                    <strong id="c2-feels" style="color: var(--text-heading);">27.0°C</strong>
+                    <strong id="c2-feels" style="color: var(--text-heading);">--°C</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);">
                     <span style="color: var(--text-secondary);"><i class="fa-solid fa-droplet" style="margin-right: 6px; color: var(--blue-secondary);"></i> Humidity</span>
-                    <strong id="c2-hum" style="color: var(--text-heading);">60%</strong>
+                    <strong id="c2-hum" style="color: var(--text-heading);">--%</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);">
                     <span style="color: var(--text-secondary);"><i class="fa-solid fa-wind" style="margin-right: 6px; color: var(--blue-primary);"></i> Wind Speed</span>
-                    <strong id="c2-wind" style="color: var(--text-heading);">2.8 m/s</strong>
+                    <strong id="c2-wind" style="color: var(--text-heading);">-- m/s</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);">
                     <span style="color: var(--text-secondary);"><i class="fa-solid fa-heart-pulse" style="margin-right: 6px; color: var(--green-accent);"></i> Comfort Score</span>
-                    <strong id="c2-comfort" style="color: var(--green-deep); font-weight: 700;">82 (Comfortable)</strong>
+                    <strong id="c2-comfort" style="color: var(--green-deep); font-weight: 700;">--</strong>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Comparative Analysis Insight -->
-    <div class="glass" style="padding: 1.75rem 2rem; border-radius: var(--radius-lg); border-left: 5px solid var(--sun-accent);">
+    <div class="glass" style="padding: 1.75rem 2rem; border-radius: var(--radius-lg); border-left: 5px solid var(--sun-accent); background: var(--surface-card); border: 1px solid var(--border-subtle);">
         <h3 style="font-size: 1.25rem; margin-bottom: 0.8rem; color: var(--text-heading); display: flex; align-items: center; gap: 0.6rem;">
             <i class="fa-solid fa-lightbulb" style="color: var(--sun-accent);"></i> Comparative Meteorological Synthesis
         </h3>
         <p id="comp-summary-text" style="color: var(--text-body); line-height: 1.7; margin: 0; font-size: 1rem;">
-            Bengaluru is currently cooler by 2.0°C with lower relative humidity (55% vs 60%). Both cities offer comfortable outdoor recreation windows with light winds under 4 m/s.
+            Enter two cities above to compute side-by-side meteorological differences.
         </p>
     </div>
 </div>
@@ -105,11 +107,13 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const compBtn = document.getElementById('compare-btn');
+    const errBanner = document.getElementById('comp-error-banner');
 
     async function loadComparison() {
-        const city1 = document.getElementById('comp-city-1').value.trim() || 'Bengaluru';
-        const city2 = document.getElementById('comp-city-2').value.trim() || 'Mysuru';
+        const city1 = (document.getElementById('comp-city-1').value || '').trim() || 'London';
+        const city2 = (document.getElementById('comp-city-2').value || '').trim() || 'Paris';
 
+        if (errBanner) errBanner.classList.add('hidden');
         compBtn.disabled = true;
         compBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Comparing...';
 
@@ -120,12 +124,23 @@ document.addEventListener('DOMContentLoaded', () => {
             ]);
             const [d1, d2] = await Promise.all([res1.json(), res2.json()]);
 
+            const errors = [];
+            if (!d1.success) errors.push(`"${city1}" not found`);
+            if (!d2.success) errors.push(`"${city2}" not found`);
+
+            if (errors.length > 0) {
+                if (errBanner) {
+                    errBanner.textContent = `Unable to compare: ${errors.join(' and ')}. Please check city spellings.`;
+                    errBanner.classList.remove('hidden');
+                }
+            }
+
             if (d1.success && d1.data) {
                 document.getElementById('c1-name').textContent = d1.data.name;
                 document.getElementById('c1-country').textContent = d1.data.sys?.country || '';
                 document.getElementById('c1-temp').textContent = `${Math.round(d1.data.main.temp)}°C`;
                 document.getElementById('c1-desc').textContent = d1.data.weather[0]?.description || '';
-                document.getElementById('c1-feels').textContent = `${d1.data.main.feels_like}°C`;
+                document.getElementById('c1-feels').textContent = `${Math.round(d1.data.main.feels_like)}°C`;
                 document.getElementById('c1-hum').textContent = `${d1.data.main.humidity}%`;
                 document.getElementById('c1-wind').textContent = `${d1.data.wind.speed} m/s`;
                 document.getElementById('c1-comfort').textContent = `${d1.comfort_score} (${d1.comfort_label})`;
@@ -136,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('c2-country').textContent = d2.data.sys?.country || '';
                 document.getElementById('c2-temp').textContent = `${Math.round(d2.data.main.temp)}°C`;
                 document.getElementById('c2-desc').textContent = d2.data.weather[0]?.description || '';
-                document.getElementById('c2-feels').textContent = `${d2.data.main.feels_like}°C`;
+                document.getElementById('c2-feels').textContent = `${Math.round(d2.data.main.feels_like)}°C`;
                 document.getElementById('c2-hum').textContent = `${d2.data.main.humidity}%`;
                 document.getElementById('c2-wind').textContent = `${d2.data.wind.speed} m/s`;
                 document.getElementById('c2-comfort').textContent = `${d2.comfort_score} (${d2.comfort_label})`;
@@ -144,20 +159,60 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (d1.success && d2.success) {
                 const diff = (d1.data.main.temp - d2.data.main.temp).toFixed(1);
-                const warmer = diff > 0 ? d1.data.name : d2.data.name;
-                const cooler = diff > 0 ? d2.data.name : d1.data.name;
+                const absDiff = Math.abs(diff);
+                const diffStr = diff > 0 
+                    ? `${d1.data.name} is currently warmer by ${absDiff}°C than ${d2.data.name}`
+                    : diff < 0 
+                    ? `${d2.data.name} is currently warmer by ${absDiff}°C than ${d1.data.name}`
+                    : `Both ${d1.data.name} and ${d2.data.name} share the same temperature (${Math.round(d1.data.main.temp)}°C)`;
+                    
+                const humDiff = Math.abs(d1.data.main.humidity - d2.data.main.humidity);
                 document.getElementById('comp-summary-text').textContent = 
-                    `${warmer} is warmer by ${Math.abs(diff)}°C than ${cooler}. ${d1.data.name} comfort rating is rated '${d1.comfort_label}' while ${d2.data.name} is rated '${d2.comfort_label}'.`;
+                    `${diffStr}. Humidity difference is ${humDiff}% (${d1.data.name}: ${d1.data.main.humidity}%, ${d2.data.name}: ${d2.data.main.humidity}%). Comfort ratings: ${d1.data.name} is "${d1.comfort_label}", ${d2.data.name} is "${d2.comfort_label}".`;
             }
         } catch (e) {
             console.error('Comparison error', e);
+            if (errBanner) {
+                errBanner.textContent = 'Connection error while comparing cities. Please try again.';
+                errBanner.classList.remove('hidden');
+            }
         } finally {
             compBtn.disabled = false;
             compBtn.innerHTML = '<i class="fa-solid fa-arrows-split-up-and-left"></i> Compare';
         }
     }
 
-    compBtn.addEventListener('click', loadComparison);
+    function updateExportLink() {
+        const c1 = document.getElementById('comp-city-1').value.trim() || 'London';
+        const c2 = document.getElementById('comp-city-2').value.trim() || 'Paris';
+        const exportBtn = document.getElementById('export-compare-csv-btn');
+        if (exportBtn) {
+            exportBtn.href = `/api/compare/export/csv?city1=${encodeURIComponent(c1)}&city2=${encodeURIComponent(c2)}`;
+        }
+    }
+
+    const c1Input = document.getElementById('comp-city-1');
+    const c2Input = document.getElementById('comp-city-2');
+    c1Input.addEventListener('input', updateExportLink);
+    c2Input.addEventListener('input', updateExportLink);
+    [c1Input, c2Input].forEach(inp => {
+        inp.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                updateExportLink();
+                loadComparison();
+            }
+        });
+    });
+
+    compBtn.addEventListener('click', () => {
+        updateExportLink();
+        loadComparison();
+    });
+
+    // Automatically execute comparison on page load for the initial inputs
+    updateExportLink();
+    loadComparison();
 });
 </script>
 {% endblock %}

@@ -1,13 +1,13 @@
+// ClimaSense - Complete Weather & City Discovery Controller
 document.addEventListener('DOMContentLoaded', () => {
     // Register Service Worker for PWA
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js', { scope: '/' })
-            .then(reg => console.log('Service Worker registered', reg))
-            .catch(err => console.error('Service Worker registration failed', err));
+            .catch(err => console.warn('Service Worker registration skipped:', err));
     }
 
-    // Load saved cities
-    window.fetchSavedCities();
+    // Load saved cities on startup
+    if (window.fetchSavedCities) window.fetchSavedCities();
 
     const searchBtn = document.getElementById('search-btn');
     const cityInput = document.getElementById('city-input');
@@ -16,10 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsModal = document.getElementById('settings-modal');
     const closeBtn = document.querySelector('.close-btn');
     const saveSettingsBtn = document.getElementById('save-settings-btn');
+    const saveCityBtn = document.getElementById('save-city-btn');
     
-    // Check if city was passed in URL or saved last city
+    // Check if city was passed in URL or saved in current active session
     const urlParams = new URLSearchParams(window.location.search);
-    const initialCity = urlParams.get('city') || localStorage.getItem('lastCity') || 'Bengaluru';
+    const initialCity = urlParams.get('city') || sessionStorage.getItem('currentSearchCity');
     
     // Initialize AI Chat Widget
     if (window.initChatWidget) window.initChatWidget();
@@ -27,33 +28,72 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshBriefingBtn = document.getElementById('refresh-briefing-btn');
     if (refreshBriefingBtn) {
         refreshBriefingBtn.addEventListener('click', () => {
-            const currentCity = window.currentWeatherData ? window.currentWeatherData.name : (localStorage.getItem('lastCity') || 'Bengaluru');
-            window.fetchBriefing(currentCity, true);
+            const currentCity = window.currentWeatherData ? window.currentWeatherData.name : sessionStorage.getItem('currentSearchCity');
+            if (currentCity) {
+                window.fetchBriefing(currentCity, true);
+            }
         });
     }
 
-    if (initialCity && cityInput) {
-        cityInput.value = initialCity;
-        fetchWeather(initialCity);
+    // Initial weather load: ONLY if there is an explicit city query parameter or restored session
+    if (initialCity && initialCity.trim()) {
+        if (cityInput) {
+            cityInput.value = initialCity;
+            fetchWeather(initialCity);
+        }
+    } else {
+        // Plain white default background across the entire website before city search
+        if (window.resetToPlainWhiteBackground) window.resetToPlainWhiteBackground();
     }
     
-    if(searchBtn) {
+    // Bind search button
+    if (searchBtn) {
         searchBtn.addEventListener('click', () => {
-            const city = cityInput.value.trim();
+            const city = cityInput ? cityInput.value.trim() : '';
             if (city) fetchWeather(city);
         });
     }
 
-    if(cityInput) {
+    // Bind Enter key in search input
+    if (cityInput) {
         cityInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault();
                 const city = cityInput.value.trim();
                 if (city) fetchWeather(city);
             }
         });
     }
+
+    // Save city button
+    if (saveCityBtn) {
+        saveCityBtn.addEventListener('click', async () => {
+            const cityToSave = window.currentWeatherData ? window.currentWeatherData.name : (cityInput ? cityInput.value.trim() : '');
+            if (!cityToSave) {
+                window.showToast("Please search for a city first.");
+                return;
+            }
+            try {
+                const res = await fetch('/api/cities/save', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({city: cityToSave})
+                });
+                const result = await res.json();
+                if (result.success) {
+                    window.showToast(`Saved ${cityToSave} to your bookmarks!`);
+                    if (window.fetchSavedCities) window.fetchSavedCities();
+                } else {
+                    window.showToast(result.message || 'City could not be saved.');
+                }
+            } catch(e) {
+                console.error(e);
+                window.showToast("Could not save city.");
+            }
+        });
+    }
     
-    // Autocomplete simulation with 300ms debounce
+    // Autocomplete simulation with 250ms debounce
     let debounceTimer = null;
     if (cityInput) {
         cityInput.addEventListener('input', (e) => {
@@ -62,15 +102,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const val = e.target.value.toLowerCase().trim();
                 const suggestionsRow = document.getElementById('suggestions-row');
                 if (!suggestionsRow) return;
-                const popularCities = ['Bengaluru', 'London', 'Tokyo', 'Paris', 'New York', 'Dubai', 'Sydney', 'Mumbai', 'Singapore', 'Berlin'];
+                const popularCities = ['London', 'Tokyo', 'Paris', 'New York', 'Dubai', 'Sydney', 'Bengaluru', 'Singapore', 'Berlin', 'Rome', 'San Francisco', 'Toronto'];
                 
-                if (val.length > 1) {
+                if (val.length > 0) {
                     const matches = popularCities.filter(c => c.toLowerCase().startsWith(val));
                     if (matches.length > 0) {
                         suggestionsRow.innerHTML = '';
-                        matches.forEach(m => {
+                        matches.slice(0, 6).forEach(m => {
                             const pill = document.createElement('div');
-                            pill.style.cssText = 'padding: 0.5rem 1rem; border-radius: 20px; background: var(--accent); color: #000; font-weight: bold; font-size: 0.9rem; cursor: pointer;';
+                            pill.style.cssText = 'padding: 0.35rem 0.85rem; border-radius: 9999px; background: var(--blue-pale); color: var(--blue-deep); font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;';
                             pill.textContent = m;
                             pill.onclick = () => {
                                 cityInput.value = m;
@@ -86,165 +126,168 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     suggestionsRow.classList.add('hidden');
                 }
-            }, 300);
+            }, 250);
+        });
+
+        // Hide suggestions on outside click
+        document.addEventListener('click', (e) => {
+            const suggestionsRow = document.getElementById('suggestions-row');
+            if (suggestionsRow && !cityInput.contains(e.target) && !suggestionsRow.contains(e.target)) {
+                suggestionsRow.classList.add('hidden');
+            }
         });
     }
 
-    if(exportCsvBtn) {
+    if (exportCsvBtn) {
         exportCsvBtn.addEventListener('click', () => {
-            if(window.currentWeatherData) {
+            if (window.currentWeatherData) {
                 window.location.href = `/api/weather/${encodeURIComponent(window.currentWeatherData.name)}/export/csv`;
             } else {
                 window.showToast("Please search for a city first.");
             }
         });
     }
+
     const exportPdfBtn = document.getElementById('export-pdf-btn');
-    if(exportPdfBtn) {
+    if (exportPdfBtn) {
         exportPdfBtn.addEventListener('click', () => {
-            if(window.currentWeatherData) {
+            if (window.currentWeatherData) {
                 window.open(`/api/weather/${encodeURIComponent(window.currentWeatherData.name)}/export/pdf`, '_blank');
             } else {
                 window.showToast("Please search for a city first.");
             }
         });
     }
+
     const statusToggleBtn = document.getElementById('status-toggle');
     const statusModal = document.getElementById('status-modal');
     const closeStatusModal = document.getElementById('close-status-modal');
-    if(statusToggleBtn && statusModal) {
+    if (statusToggleBtn && statusModal) {
         statusToggleBtn.addEventListener('click', () => {
             statusModal.classList.remove('hidden');
             window.fetchSystemStatus();
         });
     }
-    if(closeStatusModal && statusModal) {
+    if (closeStatusModal && statusModal) {
         closeStatusModal.addEventListener('click', () => statusModal.classList.add('hidden'));
     }
     
-    if(settingsBtn) {
+    if (settingsBtn && settingsModal) {
         settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
     }
-    if(closeBtn) {
+    if (closeBtn && settingsModal) {
         closeBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
-    }
-    if(saveSettingsBtn) {
-        saveSettingsBtn.addEventListener('click', () => {
-            const tempUnit = document.getElementById('setting-temp-unit').value;
-            const windUnit = document.getElementById('setting-wind-unit').value;
-            localStorage.setItem('tempUnit', tempUnit);
-            localStorage.setItem('unit', tempUnit === 'F' ? 'imperial' : 'metric');
-            localStorage.setItem('windUnit', windUnit);
-            const unitBtn = document.getElementById('unit-toggle');
-            if (unitBtn) unitBtn.textContent = tempUnit === 'F' ? '°F' : '°C';
-            settingsModal.classList.add('hidden');
-            window.showToast("Settings saved.");
-            
-            // Re-render
-            if(window.currentWeatherData) window.renderWeather(window.currentWeatherData);
-            if(window.currentForecastData) window.renderForecast(window.currentForecastData);
-            if(window.currentHourlyData) window.renderTimeline(window.currentHourlyData);
-        });
     }
 
     window.addEventListener('unitChanged', () => {
-        if(window.currentWeatherData) window.renderWeather(window.currentWeatherData);
-        if(window.currentForecastData) window.renderForecast(window.currentForecastData);
-        if(window.currentHourlyData) window.renderTimeline(window.currentHourlyData);
+        if (window.currentWeatherData) window.renderWeather(window.currentWeatherData);
+        if (window.currentForecastData) window.renderForecast(window.currentForecastData);
+        if (window.currentHourlyData) window.renderTimeline(window.currentHourlyData);
     });
 });
 
 let currentSearchId = 0;
+let currentBgSearchId = 0;
 
 async function fetchWeather(city) {
+    if (!city || !city.trim()) return;
     const searchId = ++currentSearchId;
     const spinner = document.getElementById('loading-spinner');
     const wrapper = document.getElementById('dashboard-wrapper');
     const banner = document.getElementById('alert-banner');
     
-    if(spinner) spinner.classList.remove('hidden');
-    if(wrapper) wrapper.classList.add('hidden');
-    if(banner) banner.classList.add('hidden');
-    
-    // Fetch Unsplash city background immediately
-    window.fetchBackground(city);
+    if (spinner) spinner.classList.remove('hidden');
+    if (banner) banner.classList.add('hidden');
     
     try {
-        const res = await fetch(`/api/weather/${encodeURIComponent(city)}`);
+        const res = await fetch(`/api/weather/${encodeURIComponent(city.trim())}`);
         const data = await res.json();
         
         // Prevent stale responses from overwriting newer search
         if (searchId !== currentSearchId) return;
         
-        if (data.success) {
-            localStorage.setItem('lastCity', data.data.name);
-            window.currentWeatherData = data.data; // save for unit toggle
+        if (data.success && data.data) {
+            const canonicalCity = data.data.name;
+            const desc = (data.data.weather && data.data.weather[0]) ? data.data.weather[0].description : '';
+            const icon = (data.data.weather && data.data.weather[0]) ? data.data.weather[0].icon : '01d';
+            const lat = data.data.coord ? data.data.coord.lat : null;
+            const lon = data.data.coord ? data.data.coord.lon : null;
+
+            sessionStorage.setItem('currentSearchCity', canonicalCity);
+            localStorage.setItem('lastCity', canonicalCity);
+            const cityInput = document.getElementById('city-input');
+            if (cityInput) cityInput.value = canonicalCity;
+
+            window.currentWeatherData = data.data;
             window.renderWeather(data.data, data.comfort_score, data.comfort_label);
             
-            if(data.ai_summary) {
-                const aiSumEl = document.getElementById('ai-summary-text');
-                if (aiSumEl) aiSumEl.textContent = data.ai_summary;
-            }
-            
-            window.currentRainProb = data.rain_probability || 10;
-            const rainProbEl = document.getElementById('rain-prob');
-            if(rainProbEl) rainProbEl.textContent = window.currentRainProb + '%';
+            const country = (data.data.sys && data.data.sys.country) ? data.data.sys.country : '';
+            // Step 4 & 6: Fetch Unsplash city background with canonical name, mood, and country
+            window.fetchBackground(canonicalCity, desc, searchId, country);
             
             // Highlights Banner
             const hbBanner = document.getElementById('highlights-banner');
             const hbWeather = document.getElementById('hb-weather');
             const hbRain = document.getElementById('hb-rain');
-            if(hbBanner) hbBanner.classList.remove('hidden');
-            if(hbWeather) hbWeather.textContent = `${data.data.weather[0].description.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} • ${window.getTempString(data.data.main.temp)}`;
-            if(hbRain) hbRain.textContent = `${window.currentRainProb}% Chance of Rain`;
+            const hbRainBox = document.getElementById('hb-rain-box');
+            const hbRainDivider = document.getElementById('hb-rain-divider');
+            if (hbBanner) hbBanner.classList.remove('hidden');
+            if (hbWeather) hbWeather.textContent = `${desc ? desc.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Current Conditions'} • ${window.getTempString(data.data.main.temp)}`;
+            if (data.rain_probability !== undefined && data.rain_probability !== null) {
+                window.currentRainProb = data.rain_probability;
+                if (hbRain) hbRain.textContent = `${data.rain_probability}% Chance of Rain`;
+                if (hbRainBox) hbRainBox.style.display = 'inline-flex';
+                if (hbRainDivider) hbRainDivider.style.display = 'inline-block';
+            } else {
+                window.currentRainProb = null;
+                if (hbRainBox) hbRainBox.style.display = 'none';
+                if (hbRainDivider) hbRainDivider.style.display = 'none';
+            }
             
-            // Trigger parallel fetches
-            const lat = data.data.coord.lat;
-            const lon = data.data.coord.lon;
-            const desc = data.data.weather[0].description;
-            const icon = data.data.weather[0].icon;
-            
-            window.fetchForecast(data.data.name);
-            window.fetchAQI(lat, lon);
-            window.fetchUV(lat, lon);
-            window.fetchAlerts(lat, lon);
-            window.updateTheme(desc);
-            window.updateWeatherEffects(desc, icon);
+            // Trigger parallel fetches for the selected city
+            if (window.fetchForecast) window.fetchForecast(canonicalCity);
+            if (lat !== null && lon !== null) {
+                if (window.fetchAQI) window.fetchAQI(lat, lon);
+                if (window.fetchUV) window.fetchUV(lat, lon);
+                if (window.fetchAlerts) window.fetchAlerts(lat, lon);
+                if (window.initMap) window.initMap(lat, lon, canonicalCity);
+            }
             if (window.Weather3D) {
                 window.Weather3D.updateScene(icon, data.data.weather[0].main, desc);
             }
-            window.renderInsights(data.data, window.currentRainProb);
-            window.fetchBriefing(data.data.name);
-            window.fetchCityEncyclopedia(data.data.name);
-            
-            if(window.joinCityRoom) {
-                window.joinCityRoom(data.data.name);
-            }
-            
-            if(window.initMap) {
-                window.initMap(lat, lon, data.data.name);
-            }
+            if (window.fetchBriefing) window.fetchBriefing(canonicalCity);
+            if (window.fetchCityEncyclopedia) window.fetchCityEncyclopedia(canonicalCity, country);
+            if (window.joinCityRoom) window.joinCityRoom(canonicalCity);
         } else {
-            alert(data.message || 'City not found');
-            if(spinner) spinner.classList.add('hidden');
+            if (searchId === currentSearchId) {
+                if (spinner) spinner.classList.add('hidden');
+                if (wrapper) wrapper.classList.remove('hidden');
+                window.showToast(data.message || `City "${city}" could not be found.`);
+            }
         }
     } catch(e) {
-        console.error(e);
-        if (searchId === currentSearchId && spinner) spinner.classList.add('hidden');
+        console.error('Fetch weather error:', e);
+        if (searchId === currentSearchId) {
+            if (spinner) spinner.classList.add('hidden');
+            if (wrapper) wrapper.classList.remove('hidden');
+            window.showToast("Network error retrieving weather data. Please try again.");
+        }
     }
 }
 
 window.getTempString = (tempC) => {
+    if (tempC === undefined || tempC === null) return '--°C';
     const isImperial = localStorage.getItem('tempUnit') === 'F' || localStorage.getItem('unit') === 'imperial';
-    if(isImperial) return Math.round((tempC * 9/5) + 32) + '°F';
+    if (isImperial) return Math.round((tempC * 9/5) + 32) + '°F';
     return Math.round(tempC) + '°C';
 };
 
 window.getWindString = (speedMS) => {
+    if (speedMS === undefined || speedMS === null) return '-- km/h';
     const unit = localStorage.getItem('windUnit') || 'kmh';
-    if(unit === 'mph') return Math.round(speedMS * 2.23694) + ' mph';
-    if(unit === 'ms') return Math.round(speedMS) + ' m/s';
-    return Math.round(speedMS * 3.6) + ' km/h'; // default kmh
+    if (unit === 'mph') return Math.round(speedMS * 2.23694) + ' mph';
+    if (unit === 'ms') return Math.round(speedMS) + ' m/s';
+    return Math.round(speedMS * 3.6) + ' km/h';
 };
 
 window.getWeatherEmoji = (desc, icon, windSpeed) => {
@@ -266,254 +309,295 @@ window.getWeatherEmoji = (desc, icon, windSpeed) => {
     return isNight ? '🌙' : '☀️';
 };
 
-window.updateWeatherEffects = (desc, icon) => {
-    const layer = document.getElementById('weather-effects-layer');
-    if (!layer) return;
-    layer.className = 'weather-effects-layer';
-    desc = (desc || '').toLowerCase();
-    icon = icon || '';
-    
-    if (desc.includes('thunderstorm') || desc.includes('storm')) {
-        layer.classList.add('thunderstorm', 'rain');
-    } else if (desc.includes('rain') || desc.includes('drizzle')) {
-        layer.classList.add('rain');
-    } else if (desc.includes('snow')) {
-        layer.classList.add('snow');
-    } else if (desc.includes('cloud') || desc.includes('overcast')) {
-        layer.classList.add('clouds');
-    } else if (desc.includes('clear')) {
-        if (!icon.endsWith('n')) {
-            layer.classList.add('sunshine');
-        }
+window.resetToPlainWhiteBackground = () => {
+    const pageBg = document.getElementById('page-background-layer');
+    if (pageBg) {
+        pageBg.style.backgroundImage = 'none';
+        pageBg.classList.remove('has-image');
+    }
+    const pageOverlay = document.getElementById('page-background-overlay');
+    if (pageOverlay) {
+        pageOverlay.classList.remove('has-image');
+    }
+    const heroBg = document.getElementById('hero-panorama');
+    if (heroBg) {
+        heroBg.style.backgroundImage = 'none';
+    }
+    const attrBox = document.getElementById('hero-photographer-attribution');
+    if (attrBox) {
+        attrBox.classList.add('hidden');
     }
 };
 
-window.fetchBriefing = async (city, forceRefresh = false) => {
-    const skeleton = document.getElementById('briefing-skeleton');
-    const textEl = document.getElementById('briefing-text');
-    const badgeEl = document.getElementById('briefing-badge');
-    const timeEl = document.getElementById('briefing-timestamp');
-    const mySearchId = currentSearchId;
-    
-    if (skeleton) skeleton.classList.remove('hidden');
-    if (textEl) textEl.style.display = 'none';
-    
+window.fetchBackground = async (city, weatherDesc = '', searchId = 0, country = '') => {
+    if (!city) return;
+    const bgSearchId = ++currentBgSearchId;
     try {
-        const res = await fetch(`/api/weather/${encodeURIComponent(city)}/briefing?refresh=${forceRefresh ? 'true' : 'false'}`);
+        let baseEndpoint = weatherDesc
+            ? `/api/background/${encodeURIComponent(city)}/${encodeURIComponent(weatherDesc)}`
+            : `/api/background/${encodeURIComponent(city)}`;
+        let url = `${baseEndpoint}?t=${Date.now()}`;
+        if (country) {
+            url += `&country=${encodeURIComponent(country)}`;
+        }
+        const res = await fetch(url);
         const data = await res.json();
-        if (mySearchId !== currentSearchId) return;
         
-        if (skeleton) skeleton.classList.add('hidden');
-        if (textEl) {
-            textEl.style.display = 'block';
-            textEl.textContent = data.briefing || "Weather briefing is currently unavailable.";
-        }
-        if (badgeEl) {
-            if (data.is_ai_generated) {
-                badgeEl.className = 'ai-badge';
-                badgeEl.innerHTML = `<i class="fa-solid fa-sparkles"></i> ${data.model || 'Gemini AI'}`;
-            } else {
-                badgeEl.className = 'ai-badge';
-                badgeEl.style.background = 'rgba(16, 185, 129, 0.15)';
-                badgeEl.style.color = '#10b981';
-                badgeEl.innerHTML = `<i class="fa-solid fa-calculator"></i> Grounded Engine`;
-            }
-        }
-        if (timeEl) {
-            timeEl.textContent = data.cached ? `Cached (${data.timestamp})` : `Updated (${data.timestamp})`;
+        // Race condition prevention: check if newer search began
+        if (searchId && searchId !== currentSearchId) return;
+        if (bgSearchId !== currentBgSearchId) return;
+        
+        if (data.success && data.url) {
+            const pageBg = document.getElementById('page-background-layer');
+            const pageOverlay = document.getElementById('page-background-overlay');
+            const discoverThumb = document.getElementById('discover-city-thumb');
+            const attrBox = document.getElementById('hero-photographer-attribution');
+            const attrLink = document.getElementById('hero-photographer-link');
+            
+            const img = new Image();
+            img.onload = () => {
+                if (searchId && searchId !== currentSearchId) return;
+                if (bgSearchId !== currentBgSearchId) return;
+                
+                if (pageBg) {
+                    pageBg.style.backgroundImage = `url('${data.url}')`;
+                    pageBg.classList.add('has-image');
+                }
+                if (pageOverlay) {
+                    pageOverlay.classList.add('has-image');
+                }
+                if (discoverThumb) {
+                    discoverThumb.src = data.url;
+                }
+                if (attrBox && attrLink) {
+                    attrLink.textContent = data.photographer_name || 'Unsplash Community';
+                    attrLink.href = data.photographer_url || 'https://unsplash.com?utm_source=ClimaSense&utm_medium=referral';
+                    attrBox.classList.remove('hidden');
+                }
+            };
+            img.onerror = () => {
+                if (searchId && searchId !== currentSearchId) return;
+                if (bgSearchId !== currentBgSearchId) return;
+                console.warn('City background failed to load, maintaining clean light surface');
+            };
+            img.src = data.url;
         }
     } catch(e) {
-        console.error('Error fetching briefing:', e);
-        if (mySearchId !== currentSearchId) return;
-        if (skeleton) skeleton.classList.add('hidden');
-        if (textEl) {
-            textEl.style.display = 'block';
-            textEl.textContent = "AI briefing could not be loaded at this time.";
-        }
+        console.error('Error fetching background image:', e);
     }
 };
 
-window.initChatWidget = () => {
-    const toggleBtn = document.getElementById('chat-widget-toggle');
-    const chatPanel = document.getElementById('chat-panel');
-    const closeBtn = document.getElementById('close-chat-btn');
-    const sendBtn = document.getElementById('chat-send-btn');
-    const chatInput = document.getElementById('chat-input');
-    const chatBody = document.getElementById('chat-body');
-    const chips = document.querySelectorAll('.chat-chip');
-    
-    if (!toggleBtn || !chatPanel) return;
-    
-    toggleBtn.addEventListener('click', () => {
-        chatPanel.classList.toggle('hidden');
-        if (!chatPanel.classList.contains('hidden') && chatInput) {
-            chatInput.focus();
+// ============================================================
+// 3D Weather Dimensional Visual Generator
+// ============================================================
+window.update3DWeatherVisual = (condition, desc = '') => {
+    const stage = document.getElementById('weather-3d-visual');
+    if (!stage) return;
+
+    const cond = (condition || '').toLowerCase();
+    const d = (desc || '').toLowerCase();
+
+    let html = '';
+    let emoji = '☀️';
+
+    if (cond.includes('thunder') || d.includes('thunder') || d.includes('lightning') || d.includes('storm')) {
+        emoji = '⛈️';
+        html = `
+            <div class="visual-3d-container storm-3d">
+                <div class="cloud-cluster-3d">
+                    <div class="cloud-puff-3d puff-base storm-dark"></div>
+                    <div class="cloud-puff-3d puff-top storm-mid"></div>
+                </div>
+                <div class="lightning-flash-3d">⚡</div>
+                <div class="rain-particle-3d r1"></div>
+                <div class="rain-particle-3d r2"></div>
+            </div>`;
+    } else if (cond.includes('snow') || d.includes('snow') || d.includes('flurr') || d.includes('sleet') || d.includes('ice') || d.includes('blizzard')) {
+        emoji = '❄️';
+        html = `
+            <div class="visual-3d-container snow-3d">
+                <div class="cloud-cluster-3d">
+                    <div class="cloud-puff-3d puff-base snow-cloud"></div>
+                    <div class="cloud-puff-3d puff-top"></div>
+                </div>
+                <div class="snowflake-particle-3d s1">❄</div>
+                <div class="snowflake-particle-3d s2">❅</div>
+                <div class="snowflake-particle-3d s3">❆</div>
+            </div>`;
+    } else if (cond.includes('rain') || cond.includes('drizzle') || d.includes('rain') || d.includes('shower')) {
+        emoji = '🌧️';
+        html = `
+            <div class="visual-3d-container rain-3d">
+                <div class="cloud-cluster-3d">
+                    <div class="cloud-puff-3d puff-base rain-cloud"></div>
+                    <div class="cloud-puff-3d puff-top"></div>
+                </div>
+                <div class="raindrop-particle-3d d1"></div>
+                <div class="raindrop-particle-3d d2"></div>
+                <div class="raindrop-particle-3d d3"></div>
+            </div>`;
+    } else if (cond.includes('cloud') || d.includes('cloud') || d.includes('overcast')) {
+        if (d.includes('few') || d.includes('scattered') || d.includes('partly') || d.includes('broken')) {
+            emoji = '⛅';
+            html = `
+                <div class="visual-3d-container partly-cloudy-3d">
+                    <div class="sun-orb-3d sun-peeking"></div>
+                    <div class="cloud-cluster-3d">
+                        <div class="cloud-puff-3d puff-base"></div>
+                        <div class="cloud-puff-3d puff-top"></div>
+                    </div>
+                </div>`;
+        } else {
+            emoji = '☁️';
+            html = `
+                <div class="visual-3d-container overcast-3d">
+                    <div class="cloud-cluster-3d">
+                        <div class="cloud-puff-3d puff-deep"></div>
+                        <div class="cloud-puff-3d puff-base"></div>
+                        <div class="cloud-puff-3d puff-top"></div>
+                    </div>
+                </div>`;
         }
-    });
-    
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => chatPanel.classList.add('hidden'));
+    } else if (cond.includes('wind') || d.includes('wind') || d.includes('breeze') || d.includes('gale') || d.includes('squall')) {
+        emoji = '💨';
+        html = `
+            <div class="visual-3d-container wind-3d">
+                <div class="wind-stream-3d w1"></div>
+                <div class="wind-stream-3d w2"></div>
+                <div class="wind-stream-3d w3"></div>
+            </div>`;
+    } else if (cond.includes('mist') || cond.includes('fog') || cond.includes('haze') || cond.includes('smoke') || cond.includes('dust') || cond.includes('sand')) {
+        emoji = '🌫️';
+        html = `
+            <div class="visual-3d-container fog-3d">
+                <div class="mist-bar-3d m1"></div>
+                <div class="mist-bar-3d m2"></div>
+                <div class="mist-bar-3d m3"></div>
+            </div>`;
+    } else {
+        // Clear sky / sunny default
+        emoji = '☀️';
+        html = `
+            <div class="visual-3d-container sunny-3d">
+                <div class="sun-orb-3d sunny-hero"></div>
+                <div class="sun-aura-3d"></div>
+            </div>`;
     }
-    
-    chips.forEach(chip => {
-        chip.addEventListener('click', () => {
-            const q = chip.getAttribute('data-question');
-            if (q && chatInput) {
-                chatInput.value = q;
-                handleChatSend();
-            }
-        });
-    });
-    
-    const handleChatSend = async () => {
-        const text = chatInput.value.trim();
-        if (!text) return;
-        
-        // Append user message
-        const userBubble = document.createElement('div');
-        userBubble.className = 'chat-bubble user';
-        userBubble.textContent = text;
-        chatBody.appendChild(userBubble);
-        chatInput.value = '';
-        
-        // Typing indicator
-        const aiBubble = document.createElement('div');
-        aiBubble.className = 'chat-bubble ai';
-        aiBubble.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Consulting weather data...';
-        chatBody.appendChild(aiBubble);
-        chatBody.scrollTop = chatBody.scrollHeight;
-        
-        const activeCity = window.currentWeatherData ? window.currentWeatherData.name : (localStorage.getItem('lastCity') || 'Bengaluru');
-        
-        try {
-            const res = await fetch('/api/weather/chat', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ message: text, city: activeCity })
-            });
-            const data = await res.json();
-            if (data.success && data.answer) {
-                aiBubble.textContent = data.answer;
-            } else {
-                aiBubble.textContent = data.message || "I could not retrieve an answer right now. Please try again.";
-            }
-        } catch(e) {
-            console.error('Chat error:', e);
-            aiBubble.textContent = "Network error. Please check your connection.";
-        }
-        chatBody.scrollTop = chatBody.scrollHeight;
-    };
-    
-    if (sendBtn) sendBtn.addEventListener('click', handleChatSend);
-    if (chatInput) {
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleChatSend();
-        });
+
+    stage.innerHTML = html;
+
+    const condEmojiEl = document.getElementById('weather-condition-emoji');
+    if (condEmojiEl) {
+        condEmojiEl.textContent = emoji;
     }
 };
 
 window.renderWeather = (data, comfortScore, comfortLabel) => {
-    document.getElementById('loading-spinner').classList.add('hidden');
+    const spinner = document.getElementById('loading-spinner');
+    if (spinner) spinner.classList.add('hidden');
     const wrapper = document.getElementById('dashboard-wrapper');
     if (wrapper) wrapper.classList.remove('hidden');
     
-    document.getElementById('city-name').textContent = `📍 ${data.name}`;
+    const setTxt = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = (val !== undefined && val !== null) ? val : '--';
+    };
+    const setHtml = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = (val !== undefined && val !== null) ? val : '';
+    };
+
+    setTxt('city-name', `${data.name}, ${data.sys ? data.sys.country : ''}`);
     
-    const descStr = data.weather[0].description;
-    const iconCode = data.weather[0].icon;
-    const tempStr = window.getTempString(data.main.temp);
+    const descStr = (data.weather && data.weather[0]) ? data.weather[0].description : '';
+    const iconCode = (data.weather && data.weather[0]) ? data.weather[0].icon : '01d';
+    const tempStr = window.getTempString(data.main ? data.main.temp : null);
     const emoji = window.getWeatherEmoji(descStr, iconCode, data.wind ? data.wind.speed : 0);
+    const capDesc = descStr ? descStr.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : '--';
     
-    // Capitalize description
-    const capDesc = descStr.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    
-    document.getElementById('city-subtitle').textContent = `${emoji} ${capDesc} • ${tempStr}`;
+    setTxt('city-subtitle', `${emoji} ${capDesc} • ${tempStr}`);
     
     // Calculate and display local time
+    const tzSec = data.timezone || 0;
     const utcTime = new Date().getTime() + (new Date().getTimezoneOffset() * 60000);
-    const cityTime = new Date(utcTime + (data.timezone * 1000));
-    const dtOpts = { weekday: 'long', hour: '2-digit', minute: '2-digit' };
-    const localTimeStr = cityTime.toLocaleTimeString('en-US', dtOpts);
+    const cityTime = new Date(utcTime + (tzSec * 1000));
+    const dtOpts = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    const localTimeStr = cityTime.toLocaleDateString('en-US', dtOpts);
     
-    document.getElementById('city-local-time').innerHTML = `<i class="fa-regular fa-clock"></i> ${localTimeStr} (Local)`;
+    setHtml('city-local-time', `<i class="fa-regular fa-clock"></i> ${localTimeStr} (Local)`);
     
-    // Main
-    document.getElementById('temperature').textContent = tempStr;
-    document.getElementById('weather-desc').textContent = descStr;
-    document.getElementById('weather-icon').src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@4x.png`;
+    // Main Temp & Description
+    // Trigger 3D Weather Dimensional Visual & Condition Emoji
+    const mainCond = (data.weather && data.weather[0]) ? data.weather[0].main : '';
+    window.update3DWeatherVisual(mainCond, descStr);
     
-    // KPIs
-    document.getElementById('kpi-temperature').textContent = window.getTempString(data.main.temp);
-    document.getElementById('feels-like-label').textContent = 'Feels Like ' + window.getTempString(data.main.feels_like);
-    document.getElementById('humidity').textContent = data.main.humidity + '%';
-    document.getElementById('wind-speed').textContent = window.getWindString(data.wind.speed);
-    document.getElementById('visibility').textContent = (data.visibility / 1000).toFixed(1) + ' km';
-    document.getElementById('pressure').textContent = data.main.pressure + ' hPa';
+    setTxt('temperature', tempStr);
+    setTxt('weather-desc', capDesc);
+    const iconImg = document.getElementById('weather-icon');
+    if (iconImg) iconImg.src = `https://openweathermap.org/img/wn/${iconCode}@4x.png`;
+    
+    // Feels Like & Min/Max
+    if (data.main) {
+        setTxt('feels-like-label', 'Feels like ' + window.getTempString(data.main.feels_like));
+        setTxt('card-feels-like', window.getTempString(data.main.feels_like));
+        if (data.main.temp_min !== undefined && data.main.temp_max !== undefined) {
+            setTxt('temp-min-max', `Low: ${window.getTempString(data.main.temp_min)} • High: ${window.getTempString(data.main.temp_max)}`);
+        }
+        setTxt('humidity', data.main.humidity !== undefined ? data.main.humidity + '%' : '--%');
+        setTxt('pressure', data.main.pressure !== undefined ? data.main.pressure + ' hPa' : '-- hPa');
+    }
+    
+    if (data.wind) {
+        setTxt('wind-speed', window.getWindString(data.wind.speed));
+        if (data.wind.deg !== undefined) {
+            const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const dirIdx = Math.round(data.wind.deg / 45) % 8;
+            setTxt('wind-direction', `(${dirs[dirIdx]} ${data.wind.deg}°)`);
+        }
+    }
+    
+    setTxt('visibility', data.visibility !== undefined ? (data.visibility / 1000).toFixed(1) + ' km' : 'Unavailable');
+    setTxt('cloud-coverage', (data.clouds && data.clouds.all !== undefined) ? data.clouds.all + '%' : '--%');
+    
+    // Rain
+    const rainVal = data.rain ? (data.rain['1h'] || data.rain['3h'] || 0) : 0;
+    setTxt('rain', `${rainVal} mm`);
     
     // Comfort Score KPI
-    const csVal = document.getElementById('comfort-score-val');
-    const csLabel = document.getElementById('comfort-score-label');
-    if (csVal) csVal.textContent = (comfortScore !== undefined && comfortScore !== null) ? `${comfortScore}/100` : '--';
-    if (csLabel) csLabel.textContent = comfortLabel ? `Comfort: ${comfortLabel}` : 'Comfort Score';
+    if (comfortScore !== undefined && comfortScore !== null) {
+        setTxt('comfort-score-val', `${comfortScore}/100`);
+        setTxt('comfort-score-label', comfortLabel ? `(${comfortLabel})` : '');
+    }
     
-    // Unsplash attribution update
-    const attrCity = document.getElementById('attr-city');
-    if (attrCity) attrCity.textContent = data.name;
-    
-    const rain = data.rain ? (data.rain['1h'] || 0) : 0;
-    document.getElementById('rain').textContent = rain + ' mm';
-    
-    // Sun & Moon
-    const sr = new Date((data.sys.sunrise + data.timezone + new Date().getTimezoneOffset()*60) * 1000);
-    const ss = new Date((data.sys.sunset + data.timezone + new Date().getTimezoneOffset()*60) * 1000);
-    document.getElementById('sunrise-time').textContent = sr.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
-    document.getElementById('sunset-time').textContent = ss.toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'});
-    
-    // Info
-    const infoCountry = document.getElementById('info-country');
-    if (infoCountry) infoCountry.textContent = data.sys.country;
-    let tzH = data.timezone / 3600;
-    const infoTz = document.getElementById('info-tz');
-    if (infoTz) infoTz.textContent = `UTC ${tzH >= 0 ? '+' : ''}${tzH}`;
-    const infoCoords = document.getElementById('info-coords');
-    if (infoCoords) infoCoords.textContent = `${data.coord.lat.toFixed(2)}, ${data.coord.lon.toFixed(2)}`;
 
-    // Dynamic Hero Greeting & Badges matching Mockup
+    
+    // Dynamic Hero Greeting
     const hour = cityTime.getHours();
     let greetingPrefix = "Good morning";
     if (hour >= 12 && hour < 17) greetingPrefix = "Good afternoon";
     else if (hour >= 17 && hour < 21) greetingPrefix = "Good evening";
     else if (hour >= 21 || hour < 5) greetingPrefix = "Good night";
-    const heroGreeting = document.getElementById('hero-greeting');
-    if (heroGreeting) heroGreeting.textContent = `${greetingPrefix}, ${data.name} ${emoji}`;
+    setTxt('hero-greeting', `${greetingPrefix}, ${data.name} ${emoji}`);
 
-    const dateStr = cityTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const timeStr = cityTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    const cityLocalTimeEl = document.getElementById('city-local-time');
-    if (cityLocalTimeEl) cityLocalTimeEl.textContent = `${dateStr} | ${timeStr}`;
-
-        // Dynamically update CSV export URLs for active city
-    const expCurrent = document.getElementById('export-current-weather-csv');
-    if (expCurrent) expCurrent.href = `/api/weather/${encodeURIComponent(data.name)}/export/csv`;
+    // Update CSV export URLs
     const expHourly = document.getElementById('export-hourly-forecast-csv');
     if (expHourly) expHourly.href = `/api/forecast/${encodeURIComponent(data.name)}/export/hourly/csv`;
     const expWeekly = document.getElementById('export-weekly-forecast-csv');
     if (expWeekly) expWeekly.href = `/api/forecast/${encodeURIComponent(data.name)}/export/weekly/csv`;
 
-    const fcBadge = document.getElementById('fc-city-badge');
-    if (fcBadge) fcBadge.textContent = `📍 ${data.name}, ${data.sys.country}`;
+    setTxt('fc-city-badge', `📍 ${data.name}, ${data.sys ? data.sys.country : ''}`);
 
     // Quick Info Card
-    const qiCapital = document.getElementById('qi-capital');
-    if (qiCapital) qiCapital.textContent = data.name;
-    const qiCountry = document.getElementById('qi-country');
-    if (qiCountry) qiCountry.textContent = data.sys.country;
-    const qiTz = document.getElementById('qi-timezone');
-    if (qiTz) qiTz.textContent = `UTC ${tzH >= 0 ? '+' : ''}${tzH}`;
+    setTxt('qi-capital', data.name);
+    setTxt('qi-country', data.sys ? data.sys.country : '--');
+    if (data.coord) {
+        setTxt('info-coords', `${data.coord.lat.toFixed(2)}°, ${data.coord.lon.toFixed(2)}°`);
+    }
+    const tzH = tzSec / 3600;
+    setTxt('qi-timezone', `UTC ${tzH >= 0 ? '+' : ''}${tzH}`);
 
-    // Discover Card
-    const discoverTitle = document.getElementById('discover-city-title');
-    if (discoverTitle) discoverTitle.innerHTML = `<i class="fa-solid fa-book-open" style="color: var(--blue-primary);"></i> Discover ${data.name}`;
+    // Discover Card Title
+    setHtml('discover-city-title', `<i class="fa-solid fa-book-open" style="color: var(--blue-primary);"></i> Discover ${data.name}`);
 
     // Map Button binding
     const mapBtn = document.getElementById('qi-view-map-btn');
@@ -535,40 +619,19 @@ window.renderWeather = (data, comfortScore, comfortLabel) => {
             if (mapModal) mapModal.classList.add('hidden');
         };
     }
-    
-    // reset save button
-    const saveBtn = document.getElementById('save-city-btn');
-    if (saveBtn) {
-        saveBtn.onclick = async () => {
-            try {
-                const res = await fetch('/api/cities/save', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({city: data.name})
-                });
-                const result = await res.json();
-                if (result.success) {
-                    window.showToast(`${data.name} saved!`);
-                    window.fetchSavedCities();
-                } else {
-                    window.showToast(result.message);
-                }
-            } catch(e) { console.error(e); }
-        };
-    }
 };
 
 window.fetchForecast = async (city) => {
     try {
         const res = await fetch(`/api/forecast/${encodeURIComponent(city)}`);
         const data = await res.json();
-        if(data.success) {
+        if (data.success) {
             window.currentForecastData = data.forecast;
             window.currentHourlyData = data.hourly;
             window.renderForecast(data.forecast);
-            if(data.hourly) window.renderTimeline(data.hourly);
+            if (data.hourly) window.renderTimeline(data.hourly);
         }
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error('Forecast fetch error:', e); }
 };
 
 window.renderForecast = (forecast) => {
@@ -576,7 +639,6 @@ window.renderForecast = (forecast) => {
     if (!container) return;
     container.innerHTML = '';
     
-    // Support either 5-column tile grid or row fallback
     const days = (forecast || []).slice(0, 5);
     days.forEach((day, idx) => {
         const dObj = new Date(day.date);
@@ -584,36 +646,33 @@ window.renderForecast = (forecast) => {
         const dateStr = dObj.toLocaleDateString('en-US', {month: 'short', day: 'numeric'});
         const highStr = window.getTempString(day.max_temp !== undefined ? day.max_temp : day.temp);
         const lowStr = window.getTempString(day.min_temp !== undefined ? day.min_temp : day.temp);
+        const cond = day.condition || day.description || '';
+        const dayEmoji = window.getWeatherEmoji(cond, day.icon, 0);
         
         const tile = document.createElement('div');
         tile.className = 'forecast-day-tile';
         tile.innerHTML = `
-            <div class="forecast-tile-day">${dayName}</div>
-            <div class="forecast-tile-date">${dateStr}</div>
-            <img src="https://openweathermap.org/img/wn/${day.icon}.png" alt="Weather icon" style="width: 38px; height: 38px;">
-            <div class="forecast-tile-temp">${highStr}</div>
-            <div class="forecast-tile-cond">${day.description}</div>
+            <div class="forecast-tile-header">
+                <span class="forecast-tile-day">${dayName}</span>
+                <span class="forecast-tile-date">${dateStr}</span>
+            </div>
+            <div class="forecast-tile-icon-box">
+                <img src="https://openweathermap.org/img/wn/${day.icon}@2x.png" alt="${cond}" class="forecast-tile-img" onerror="this.src='https://openweathermap.org/img/wn/${day.icon}.png'">
+            </div>
+            <div class="forecast-tile-temps">
+                <span class="forecast-tile-high">${highStr}</span>
+                <span class="forecast-tile-low">${lowStr}</span>
+            </div>
+            <div class="forecast-tile-cond-badge">
+                <span class="forecast-tile-emoji">${dayEmoji}</span>
+                <span class="forecast-tile-cond-text">${cond}</span>
+            </div>
         `;
         container.appendChild(tile);
     });
 };
 
 window.renderTimeline = (hourly) => {
-    const container = document.getElementById('timeline-container');
-    if (container) {
-        container.innerHTML = '';
-        hourly.forEach(item => {
-            const block = document.createElement('div');
-            block.className = 'timeline-item';
-            block.innerHTML = `
-                <div class="timeline-time">${item.time}</div>
-                <img src="https://openweathermap.org/img/wn/${item.icon}.png" alt="icon">
-                <div class="timeline-temp">${window.getTempString(item.temp)}</div>
-            `;
-            container.appendChild(block);
-        });
-    }
-
     const canvas = document.getElementById('hourly-curve-canvas');
     if (canvas && typeof Chart !== 'undefined') {
         const isImperial = localStorage.getItem('tempUnit') === 'F' || localStorage.getItem('unit') === 'imperial';
@@ -685,77 +744,318 @@ window.renderTimeline = (hourly) => {
 };
 
 window.fetchAQI = async (lat, lon) => {
+    const hbAqi = document.getElementById('hb-aqi');
+    if (hbAqi) hbAqi.textContent = 'AQI: Loading...';
     try {
         const res = await fetch(`/api/aqi?lat=${lat}&lon=${lon}`);
         const data = await res.json();
-        if(data.success) {
-            document.getElementById('aqi-value').textContent = data.aqi || '--';
-            const label = document.getElementById('aqi-label');
-            label.textContent = data.label;
-            
-            label.className = 'aqi-badge';
-            label.classList.add('aqi-' + data.label.toLowerCase().replace(' ', '-'));
-            
-            const mainPollutantEl = document.getElementById('aqi-main-pollutant');
-            if(mainPollutantEl && data.main_pollutant) {
-                mainPollutantEl.textContent = `Main Pollutant: ${data.main_pollutant}`;
-            }
-            const hbAqi = document.getElementById('hb-aqi');
-            if(hbAqi) {
+        if (data.success && data.label) {
+            if (hbAqi) {
                 hbAqi.textContent = `AQI: ${data.label}`;
             }
+        } else {
+            if (hbAqi) hbAqi.textContent = 'AQI: Unavailable';
         }
-    } catch(e) { console.error(e); }
+    } catch(e) {
+        console.error('AQI fetch error:', e);
+        if (hbAqi) hbAqi.textContent = 'AQI: Unavailable';
+    }
+};
+
+window.fetchUV = async (lat, lon) => {
+    try {
+        const res = await fetch(`/api/uv?lat=${lat}&lon=${lon}`);
+        const data = await res.json();
+        if (data.success) {
+            const uvEl = document.getElementById('uv-index');
+            if (uvEl) uvEl.textContent = `${data.uvi} (${data.category})`;
+        }
+    } catch(e) { console.error('UV fetch error:', e); }
 };
 
 window.fetchAlerts = async (lat, lon) => {
     try {
         const res = await fetch(`/api/alerts?lat=${lat}&lon=${lon}`);
         const data = await res.json();
-        if(data.success && data.alert) {
-            const banner = document.getElementById('alert-banner');
-            banner.textContent = `⚠️ ${data.alert.title}: ${data.alert.description}`;
-            banner.className = 'alert-banner severe';
-            banner.classList.remove('hidden');
+        const banner = document.getElementById('alert-banner');
+        if (banner) {
+            if (data.success && data.alert) {
+                banner.textContent = `⚠️ ${data.alert.title}: ${data.alert.description}`;
+                banner.className = 'alert-banner severe';
+                banner.classList.remove('hidden');
+            } else {
+                banner.classList.add('hidden');
+            }
         }
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error('Alerts fetch error:', e); }
 };
 
-window.fetchBackground = async (city, weatherDesc = '') => {
-    if (!city) return;
+window.fetchBriefing = async (city, forceRefresh = false) => {
+    const skeleton = document.getElementById('briefing-skeleton');
+    const textEl = document.getElementById('briefing-text');
+    const badgeEl = document.getElementById('briefing-badge');
+    const timeEl = document.getElementById('briefing-timestamp');
+    const mySearchId = currentSearchId;
+    
+    if (skeleton) skeleton.classList.remove('hidden');
+    if (textEl) textEl.style.display = 'none';
+    
     try {
-        const url = weatherDesc
-            ? `/api/background/${encodeURIComponent(city)}/${encodeURIComponent(weatherDesc)}`
-            : `/api/background/${encodeURIComponent(city)}`;
+        const res = await fetch(`/api/weather/${encodeURIComponent(city)}/briefing?refresh=${forceRefresh ? 'true' : 'false'}`);
+        const data = await res.json();
+        if (mySearchId !== currentSearchId) return;
+        
+        if (skeleton) skeleton.classList.add('hidden');
+        if (textEl) {
+            textEl.style.display = 'block';
+            textEl.textContent = data.briefing || "Weather briefing is currently unavailable.";
+        }
+        if (badgeEl) {
+            if (data.is_ai_generated) {
+                badgeEl.className = 'ai-badge';
+                badgeEl.innerHTML = `<i class="fa-solid fa-sparkles"></i> ${data.model || 'Gemini AI'}`;
+            } else {
+                badgeEl.className = 'ai-badge';
+                badgeEl.style.background = 'rgba(16, 185, 129, 0.15)';
+                badgeEl.style.color = '#10b981';
+                badgeEl.innerHTML = `<i class="fa-solid fa-calculator"></i> Grounded Engine`;
+            }
+        }
+        if (timeEl) {
+            timeEl.textContent = 'Grounded Observation';
+        }
+    } catch(e) {
+        console.error('Error fetching briefing:', e);
+        if (mySearchId !== currentSearchId) return;
+        if (skeleton) skeleton.classList.add('hidden');
+        if (textEl) {
+            textEl.style.display = 'block';
+            textEl.textContent = "AI briefing could not be loaded at this time.";
+        }
+    }
+};
+
+window.initChatWidget = () => {
+    const toggleBtn = document.getElementById('chat-widget-toggle');
+    const openAssistantBtn = document.getElementById('open-assistant-btn');
+    const chatPanel = document.getElementById('chat-panel');
+    const closeBtn = document.getElementById('close-chat-btn');
+    const sendBtn = document.getElementById('chat-send-btn');
+    const chatInput = document.getElementById('chat-input');
+    const chatBody = document.getElementById('chat-body');
+    const chips = document.querySelectorAll('.chat-chip');
+    
+    if (!chatPanel) return;
+    
+    let chatHistory = [];
+    
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            chatPanel.classList.toggle('hidden');
+            if (!chatPanel.classList.contains('hidden') && chatInput) {
+                chatInput.focus();
+            }
+        });
+    }
+
+    if (openAssistantBtn) {
+        openAssistantBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            chatPanel.classList.remove('hidden');
+            if (chatInput) chatInput.focus();
+        });
+    }
+
+    if (window.location.hash === '#chat-panel') {
+        chatPanel.classList.remove('hidden');
+        if (chatInput) chatInput.focus();
+    }
+    window.addEventListener('hashchange', () => {
+        if (window.location.hash === '#chat-panel') {
+            chatPanel.classList.remove('hidden');
+            if (chatInput) chatInput.focus();
+        }
+    });
+    
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => chatPanel.classList.add('hidden'));
+    }
+    
+    chips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            const q = chip.getAttribute('data-question');
+            if (q && chatInput) {
+                chatInput.value = q;
+                handleChatSend();
+            }
+        });
+    });
+    
+    const handleChatSend = async () => {
+        const text = chatInput.value.trim();
+        if (!text) return;
+        
+        const userBubble = document.createElement('div');
+        userBubble.className = 'chat-bubble user';
+        userBubble.textContent = text;
+        chatBody.appendChild(userBubble);
+        chatInput.value = '';
+        
+        // Record in conversation history (max 6 turns)
+        chatHistory.push({ role: 'user', content: text });
+        if (chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
+        
+        const aiBubble = document.createElement('div');
+        aiBubble.className = 'chat-bubble ai';
+        aiBubble.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Consulting weather context...';
+        chatBody.appendChild(aiBubble);
+        chatBody.scrollTop = chatBody.scrollHeight;
+        
+        const activeCity = window.currentWeatherData ? window.currentWeatherData.name : (localStorage.getItem('lastCity') || 'London');
+        
+        try {
+            const res = await fetch('/api/weather/chat', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ message: text, city: activeCity, history: chatHistory })
+            });
+            const data = await res.json();
+            if (data.success && data.answer) {
+                const isGemini = data.is_ai_generated && data.provider === 'Google Gemini';
+                const tagIcon = isGemini ? 'fa-brain' : 'fa-shield-halved';
+                const tagText = isGemini ? 'Google Gemini' : 'Smart Rules Fallback';
+                const tagBg = isGemini ? 'var(--lavender-pale)' : 'var(--blue-pale)';
+                const tagColor = isGemini ? 'var(--lavender-accent)' : 'var(--blue-primary)';
+                
+                aiBubble.innerHTML = `
+                    <div style="margin-bottom: 6px;">
+                        <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: 9999px; background: ${tagBg}; color: ${tagColor}; font-weight: 700; border: 1px solid var(--border-subtle); display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="fa-solid ${tagIcon}"></i> ${tagText}
+                        </span>
+                    </div>
+                    <div style="line-height: 1.6;">${data.answer.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+                `;
+                chatHistory.push({ role: 'assistant', content: data.answer });
+                if (chatHistory.length > 6) chatHistory = chatHistory.slice(-6);
+            } else {
+                aiBubble.textContent = data.message || "I could not retrieve an answer right now. Please try again.";
+            }
+        } catch(e) {
+            console.error('Chat error:', e);
+            aiBubble.textContent = "Network error. Please check your connection.";
+        }
+        chatBody.scrollTop = chatBody.scrollHeight;
+    };
+    
+    if (sendBtn) sendBtn.addEventListener('click', handleChatSend);
+    if (chatInput) {
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleChatSend();
+            }
+        });
+    }
+};
+
+window.fetchCityEncyclopedia = async (city, country = '') => {
+    const infoName = document.getElementById('city-info-name') || document.getElementById('city-info-title');
+    const infoSummary = document.getElementById('city-info-summary');
+    const infoReadMore = document.getElementById('city-info-read-more');
+    const discoverNarrative = document.getElementById('discover-city-narrative');
+    const discoverTitle = document.getElementById('discover-city-title');
+
+    if (infoName) infoName.textContent = `About ${city}`;
+    if (infoSummary) infoSummary.textContent = `Loading Wikipedia overview for ${city}...`;
+
+    try {
+        let url = `/api/encyclopedia/${encodeURIComponent(city)}`;
+        if (country) {
+            url += `?country=${encodeURIComponent(country)}`;
+        }
         const res = await fetch(url);
         const data = await res.json();
-        if(data.success && data.url) {
-            const bgEl = document.getElementById('bg-image');
-            const heroPanorama = document.getElementById('hero-panorama');
-            const discoverThumb = document.getElementById('discover-city-thumb');
-            
-            const img = new Image();
-            img.onload = () => {
-                if (bgEl) bgEl.style.backgroundImage = `url('${data.url}')`;
-                if (heroPanorama) heroPanorama.style.backgroundImage = `url('${data.url}')`;
-                if (discoverThumb) discoverThumb.src = data.url;
-            };
-            img.onerror = () => {
-                const fallbackUrl = "https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?auto=format&fit=crop&w=1600&q=80";
-                if (bgEl) bgEl.style.backgroundImage = `url('${fallbackUrl}')`;
-                if (heroPanorama) heroPanorama.style.backgroundImage = `url('${fallbackUrl}')`;
-            };
-            img.src = data.url;
-            
-            
+        
+        const info = data.info || (data.article ? {
+            title: data.article.title || city,
+            summary: data.article.summary || data.article.lead_paragraph || '',
+            article_url: data.article.article_url || `https://en.wikipedia.org/wiki/${encodeURIComponent(city)}`,
+            is_available: data.article.is_available !== false
+        } : null);
+
+        if (info && info.summary) {
+            if (infoName) infoName.textContent = info.title || city;
+            if (infoSummary) infoSummary.textContent = info.summary;
+            if (infoReadMore && info.article_url) {
+                infoReadMore.href = info.article_url;
+            }
+            if (discoverNarrative) {
+                discoverNarrative.textContent = info.summary;
+            }
+            if (discoverTitle) {
+                discoverTitle.innerHTML = `<i class="fa-solid fa-book-open" style="color: var(--blue-primary);"></i> ${info.title || city}`;
+            }
+        } else {
+            if (infoSummary) {
+                infoSummary.textContent = `Detailed Wikipedia summary for ${city} is currently unavailable.`;
+            }
+            if (infoReadMore) {
+                infoReadMore.href = `https://en.wikipedia.org/wiki/Special:Search?search=${encodeURIComponent(city)}`;
+            }
         }
-    } catch(e) { console.error('Error fetching background image:', e); }
+    } catch (e) {
+        console.error('Error fetching city info:', e);
+        if (infoSummary) {
+            infoSummary.textContent = `Could not retrieve Wikipedia overview for ${city} at this time.`;
+        }
+    }
 };
 
-window.updateTheme = (desc) => {
-    // Strict Light Theme enforcement: zero dark mode classes
-    document.body.classList.remove('dark-theme');
-    document.body.classList.add('light-theme');
+window.fetchSavedCities = async () => {
+    const shelf = document.getElementById('saved-cities-shelf');
+    const container = document.getElementById('saved-cities-container');
+    if (!shelf) return;
+    
+    try {
+        const res = await fetch('/api/cities/saved');
+        const data = await res.json();
+        if (data.success && data.cities && data.cities.length > 0) {
+            if (container) container.classList.remove('hidden');
+            shelf.innerHTML = '';
+            data.cities.forEach(c => {
+                const card = document.createElement('div');
+                card.className = 'saved-city-card';
+                card.innerHTML = `
+                    <button class="remove-btn" title="Remove city" onclick="window.unsaveCity(event, '${c.city}')"><i class="fa-solid fa-xmark"></i></button>
+                    <strong>${c.city}</strong>
+                `;
+                card.onclick = () => {
+                    const cityInput = document.getElementById('city-input');
+                    if (cityInput) cityInput.value = c.city;
+                    fetchWeather(c.city);
+                };
+                shelf.appendChild(card);
+            });
+        } else {
+            if (container) container.classList.add('hidden');
+        }
+    } catch(e) { console.error('Saved cities error:', e); }
+};
+
+window.unsaveCity = async (e, city) => {
+    e.stopPropagation();
+    try {
+        const res = await fetch('/api/cities/unsave', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({city: city})
+        });
+        const result = await res.json();
+        if (result.success) {
+            window.showToast(`${city} removed.`);
+            window.fetchSavedCities();
+        }
+    } catch(err) { console.error(err); }
 };
 
 window.showToast = (message) => {
@@ -767,7 +1067,7 @@ window.showToast = (message) => {
     }
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = `<i class="fa-solid fa-circle-info" style="color: var(--accent); margin-right: 8px;"></i> ${message}`;
+    toast.innerHTML = `<i class="fa-solid fa-circle-info" style="color: var(--blue-primary); margin-right: 8px;"></i> ${message}`;
     container.appendChild(toast);
     
     setTimeout(() => {
@@ -776,120 +1076,14 @@ window.showToast = (message) => {
     }, 3000);
 };
 
-window.fetchSavedCities = async () => {
-    const shelf = document.getElementById('saved-cities-shelf');
-    const container = document.getElementById('saved-cities-container');
-    if (!shelf) return;
-    
-    try {
-        const res = await fetch('/api/cities/saved');
-        const data = await res.json();
-        if (data.success && data.cities.length > 0) {
-            container.classList.remove('hidden');
-            shelf.innerHTML = '';
-            data.cities.forEach(c => {
-                const card = document.createElement('div');
-                card.className = 'saved-city-card';
-                card.innerHTML = `
-                    <button class="remove-btn" title="Remove city" onclick="window.unsaveCity(event, '${c.city}')"><i class="fa-solid fa-xmark"></i></button>
-                    <strong>${c.city}</strong>
-                `;
-                card.onclick = () => {
-                    document.getElementById('city-input').value = c.city;
-                    fetchWeather(c.city);
-                };
-                shelf.appendChild(card);
-            });
-        } else {
-            container.classList.add('hidden');
-        }
-    } catch(e) { console.error(e); }
-};
-
-
-window.unsaveCity = async (e, city) => {
-    e.stopPropagation();
-    try {
-        const res = await fetch('/api/cities/unsave', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({city: city})
-        });
-        const result = await res.json();
-        if(result.success) {
-            window.showToast(`${city} removed.`);
-            window.fetchSavedCities();
-        }
-    } catch(err) { console.error(err); }
-};
-
-window.fetchUV = async (lat, lon) => {
-    try {
-        const res = await fetch(`/api/uv?lat=${lat}&lon=${lon}`);
-        const data = await res.json();
-        if(data.success) {
-            const uvEl = document.getElementById('uv-index');
-            const uvLbl = document.getElementById('uv-label');
-            if(uvEl) uvEl.textContent = data.uvi;
-            if(uvLbl) uvLbl.textContent = `UV Index (${data.category})`;
-        }
-    } catch(e) { console.error(e); }
-};
-
-window.renderInsights = (weather, rainProb) => {
-    const list = document.getElementById('weather-insights-list');
-    if(!list) return;
-    list.innerHTML = '';
-    
-    const temp = weather.main.temp;
-    const wind = weather.wind.speed;
-    const desc = weather.weather[0].description.toLowerCase();
-    
-    const items = [];
-    // Bullet 1: Activity
-    if(temp >= 18 && temp <= 28 && !desc.includes('rain') && !desc.includes('storm')) {
-        items.push('🏃 Pleasant temperature and clear skies make outdoor sports and exercise ideal today.');
-    } else if(temp > 32) {
-        items.push('🔥 Extreme heat detected. Keep strenuous outdoor activity to early morning or evening.');
-    } else if(temp < 10) {
-        items.push('🧥 Cold temperatures outside. Wear warm layered clothing if heading outdoors.');
-    } else {
-        items.push('🚶 Moderate outdoor conditions. Stay prepared for shifting weather.');
-    }
-    
-    // Bullet 2: Rain
-    if(rainProb >= 60 || desc.includes('rain') || desc.includes('storm')) {
-        items.push('☔ High chance of precipitation. Carry an umbrella and allow extra travel time.');
-    } else {
-        items.push('🌤️ Low chance of rain expected today. Favorable for commuting and travel.');
-    }
-    
-    // Bullet 3: Wind & Comfort
-    if(wind > 10) {
-        items.push('💨 Strong winds reported. Secure light patio items and be cautious on elevated roads.');
-    } else {
-        items.push('🍃 Light breezes contribute to comfortable ambient air circulation.');
-    }
-    
-    // Bullet 4: Air Quality & Health
-    items.push('🌿 Monitor local air quality levels if you have sensitive respiratory conditions.');
-
-    items.forEach(text => {
-        const li = document.createElement('li');
-        li.style.cssText = 'background: rgba(255,255,255,0.05); padding: 0.8rem 1rem; border-radius: 8px; border-left: 3px solid var(--accent); font-size: 0.9rem;';
-        li.textContent = text;
-        list.appendChild(li);
-    });
-};
-
 window.fetchSystemStatus = async () => {
     const grid = document.getElementById('status-cards-grid');
-    if(!grid) return;
+    if (!grid) return;
     grid.innerHTML = '<div style="grid-column: span 2; text-align: center; padding: 2rem;">Loading System Diagnostics...</div>';
     try {
         const res = await fetch('/api/system-status');
         const data = await res.json();
-        if(data.success && data.status) {
+        if (data.success && data.status) {
             grid.innerHTML = '';
             Object.values(data.status).forEach(srv => {
                 const card = document.createElement('div');
@@ -899,7 +1093,7 @@ window.fetchSystemStatus = async () => {
                         <span>${srv.name}</span>
                         <span class="status-badge ${srv.status === 'Online' ? 'status-online' : 'status-degraded'}">${srv.status}</span>
                     </div>
-                    <div style="font-size: 0.85rem; color: #adb5bd;">${srv.database || srv.ttl || 'Operational'}</div>
+                    <div style="font-size: 0.85rem; color: #64788b;">${srv.database || srv.ttl || 'Operational'}</div>
                     ${srv.api_key_status ? `<div class="status-key-secure"><i class="fa-solid fa-lock"></i> API Key: ${srv.api_key_status}</div>` : ''}
                 `;
                 grid.appendChild(card);
@@ -908,87 +1102,5 @@ window.fetchSystemStatus = async () => {
     } catch(e) {
         console.error(e);
         grid.innerHTML = '<div style="grid-column: span 2; color: #ef4444;">Failed to load system status.</div>';
-    }
-};
-
-window.fetchCityEncyclopedia = async (city) => {
-    const encWrapper = document.getElementById('encyclopedia-wrapper');
-    const encTitle = document.getElementById('encyclopedia-city-title');
-    const encLead = document.getElementById('encyclopedia-lead-paragraph');
-    const tocList = document.getElementById('toc-list');
-    const articleBody = document.getElementById('encyclopedia-article-body');
-    const badgeWordCount = document.getElementById('badge-word-count');
-    const badgeReadingTime = document.getElementById('badge-reading-time');
-
-    if (!encWrapper || !encTitle || !articleBody) return;
-
-    try {
-        const res = await fetch(`/api/encyclopedia/${encodeURIComponent(city)}`);
-        const data = await res.json();
-        if (data.success && data.article) {
-            const article = data.article;
-            encTitle.textContent = `${article.city} — Municipal & Meteorological Monograph`;
-            if (badgeWordCount) {
-                badgeWordCount.innerHTML = `<i class="fa-solid fa-file-lines"></i> <strong>${article.total_word_count.toLocaleString()} Words</strong>`;
-            }
-            if (badgeReadingTime) {
-                badgeReadingTime.innerHTML = `<i class="fa-solid fa-clock"></i> <strong>${article.reading_time_minutes} min read</strong>`;
-            }
-            if (encLead) {
-                encLead.textContent = article.summary || '';
-            }
-
-            // Table of Contents
-            if (tocList) {
-                tocList.innerHTML = '';
-                article.sections.forEach((sec, idx) => {
-                    const li = document.createElement('li');
-                    const link = document.createElement('a');
-                    link.className = 'toc-link';
-                    link.href = `#encyclopedia-sec-${idx}`;
-                    link.innerHTML = `<i class="fa-solid fa-angle-right" style="font-size:0.75rem; margin-right:4px;"></i> ${sec.title}`;
-                    link.onclick = (e) => {
-                        e.preventDefault();
-                        const target = document.getElementById(`encyclopedia-sec-${idx}`);
-                        if (target) {
-                            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            document.querySelectorAll('.toc-link').forEach(l => l.classList.remove('active'));
-                            link.classList.add('active');
-                        }
-                    };
-                    li.appendChild(link);
-                    tocList.appendChild(li);
-                });
-            }
-
-            // Monograph Sections
-            articleBody.innerHTML = '';
-            article.sections.forEach((sec, idx) => {
-                const secEl = document.createElement('section');
-                secEl.id = `encyclopedia-sec-${idx}`;
-                secEl.className = 'encyclopedia-section';
-
-                const h2 = document.createElement('h2');
-                h2.innerHTML = `${sec.title} <span class="encyclopedia-citation">[Ref: City Archive ${idx + 1}]</span>`;
-                secEl.appendChild(h2);
-
-                if (sec.content) {
-                    const paragraphs = sec.content.split('\n\n');
-                    paragraphs.forEach(pText => {
-                        if (pText.trim()) {
-                            const p = document.createElement('p');
-                            p.textContent = pText.trim();
-                            secEl.appendChild(p);
-                        }
-                    });
-                }
-
-                articleBody.appendChild(secEl);
-            });
-
-            encWrapper.classList.remove('hidden');
-        }
-    } catch (e) {
-        console.error('Error fetching city encyclopedia:', e);
     }
 };

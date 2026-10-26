@@ -1,16 +1,27 @@
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, Response
 from flask_login import login_required
 import services.openweather_service as openweather_service
 from collections import defaultdict
 from datetime import datetime
+import io
+import csv
+import re
 
 forecast_bp = Blueprint('forecast', __name__)
 
 def get_forecast(city):
     return openweather_service.get_forecast(city)
 
+def sanitize_csv_cell(val):
+    if val is None:
+        return 'N/A'
+    s = str(val).strip()
+    forbidden = ('=', '+', '-', '@', chr(9), chr(10), chr(13))
+    if s and s[0] in forbidden:
+        return "'" + s
+    return s
+
 @forecast_bp.route('/api/forecast/<city>')
-@login_required
 def api_forecast(city):
     data = get_forecast(city)
     if data and 'list' in data:
@@ -32,6 +43,7 @@ def api_forecast(city):
                     'temp': round(item['main']['temp'], 1),
                     'pop': int(round(item.get('pop', 0) * 100)),
                     'condition': item['weather'][0]['description'] if item.get('weather') else '',
+                    'description': item['weather'][0]['description'] if item.get('weather') else '',
                     'icon': item['weather'][0]['icon'] if item.get('weather') else '01d'
                 })
             
@@ -42,13 +54,16 @@ def api_forecast(city):
             max_temp = max(temps)
             min_temp = min(temps)
             max_pop = max((int(round(i.get('pop', 0) * 100)) for i in items), default=0)
+            cond = midday['weather'][0]['description'] if midday.get('weather') else ''
             
             simplified_daily.append({
                 'date': date.strftime('%a, %b %d'),
                 'max_temp': round(max_temp, 1),
                 'min_temp': round(min_temp, 1),
+                'temp': round(max_temp, 1),
                 'pop': max_pop,
-                'condition': midday['weather'][0]['description'] if midday.get('weather') else '',
+                'condition': cond,
+                'description': cond,
                 'icon': midday['weather'][0]['icon'] if midday.get('weather') else '01d'
             })
             
@@ -56,26 +71,13 @@ def api_forecast(city):
             'success': True,
             'city': data.get('city', {}).get('name', city),
             'timezone_offset': tz_offset,
-            'forecast': simplified_daily, # Backward compatibility with test
+            'forecast': simplified_daily,
             'daily': simplified_daily,
+            'simplified_daily': simplified_daily,
             'hourly': hourly_forecast
         })
         
     return jsonify({'success': False, 'message': 'Forecast unavailable'}), 404
-
-import io
-import csv
-import re
-from flask import Response
-
-def sanitize_csv_cell(val):
-    if val is None:
-        return 'N/A'
-    s = str(val).strip()
-    forbidden = ('=', '+', '-', '@', chr(9), chr(10), chr(13))
-    if s and s[0] in forbidden:
-        return "'" + s
-    return s
 
 @forecast_bp.route('/api/forecast/<city>/export/hourly/csv')
 @login_required
@@ -121,7 +123,7 @@ def export_hourly_csv(city):
         ])
         
     clean_city = re.sub(r'[^a-zA-Z0-9_-]', '_', city.lower())
-    response = Response(output.getvalue(), mimetype='text/csv; charset=utf-8')
+    response = Response(output.getvalue(), mimetype='text/csv')
     response.headers['Content-Disposition'] = f'attachment; filename=climasense_hourly_forecast_{clean_city}.csv'
     return response
 
@@ -172,6 +174,6 @@ def export_weekly_csv(city):
         ])
         
     clean_city = re.sub(r'[^a-zA-Z0-9_-]', '_', city.lower())
-    response = Response(output.getvalue(), mimetype='text/csv; charset=utf-8')
+    response = Response(output.getvalue(), mimetype='text/csv')
     response.headers['Content-Disposition'] = f'attachment; filename=climasense_weekly_forecast_{clean_city}.csv'
     return response

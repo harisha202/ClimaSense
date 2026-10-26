@@ -11,7 +11,6 @@ def trends():
     return render_template('trends.html')
 
 @trends_bp.route('/api/trends/<city>')
-@login_required
 def api_trends(city):
     range_str = request.args.get('range', '7d')
     days = 7
