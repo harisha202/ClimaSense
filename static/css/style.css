@@ -218,6 +218,51 @@ a:hover {
     background: var(--blue-pale);
 }
 
+
+/* Minimal Authentication Navbar (Sign In & Sign Up pages) */
+.navbar.navbar-auth {
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.auth-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.nav-signup-pill {
+    padding: 0.45rem 1.25rem;
+    border-radius: var(--radius-pill);
+    background: var(--blue-pale);
+    color: var(--blue-primary);
+    border: 1.5px solid rgba(74, 144, 226, 0.25);
+    font-weight: 700;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all var(--transition-fast);
+    box-shadow: 0 2px 6px rgba(49, 133, 214, 0.08);
+    display: inline-flex;
+    align-items: center;
+}
+
+.nav-signup-pill:hover,
+.nav-signup-pill.active {
+    background: var(--blue-primary);
+    color: #FFFFFF;
+    border-color: var(--blue-primary);
+    transform: translateY(-1px);
+}
+
+.nav-signin-pill.active {
+    background: var(--blue-pale);
+    border-color: var(--blue-primary);
+    color: var(--blue-primary);
+}
+
 .nav-actions {
     display: flex;
     align-items: center;
@@ -2999,10 +3044,12 @@ main {
     max-width: calc(100vw - 2rem);
     height: 520px;
     max-height: calc(100vh - 4rem);
-    background: #FFFFFF;
-    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(220, 234, 247, 0.85);
     border-radius: 16px;
-    box-shadow: 0 12px 36px rgba(38, 55, 74, 0.15);
+    box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12);
     display: flex;
     flex-direction: column;
     z-index: 9999;
@@ -3025,7 +3072,7 @@ main {
 
 .chat-chips-container {
     padding: 0.65rem 1rem;
-    background: #FFFFFF;
+    background: rgba(255, 255, 255, 0.75);
     border-bottom: 1px solid var(--border-subtle);
     display: flex;
     gap: 0.4rem;
@@ -3058,7 +3105,7 @@ main {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    background: #FAFDFE;
+    background: rgba(250, 253, 254, 0.75);
 }
 
 .chat-bubble {
@@ -3086,7 +3133,7 @@ main {
 
 .chat-input-row {
     padding: 0.75rem 1rem;
-    background: #FFFFFF;
+    background: rgba(255, 255, 255, 0.82);
     border-top: 1px solid var(--border-subtle);
     display: flex;
     gap: 0.5rem;
