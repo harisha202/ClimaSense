@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, render_template, request, Response, current_app
+from flask import Blueprint, jsonify, render_template, request, Response, current_app, redirect, url_for
 import re
 import csv
 import io
@@ -38,6 +38,8 @@ def get_weather_by_coords(lat, lon):
 @weather_bp.route('/')
 def home():
     """Page 00: Welcoming ClimaSense Home & Discovery Page matching master screenshot reference."""
+    if not current_user.is_authenticated:
+        return redirect(url_for('auth.show_login'))
     return render_template('home.html')
 
 @weather_bp.route('/weather')
@@ -47,10 +49,12 @@ def index():
     return render_template('index.html')
 
 @weather_bp.route('/compare')
+@login_required
 def compare():
     return render_template('compare.html')
 
 @weather_bp.route('/explore')
+@login_required
 def explore():
     """Page 06: Cities Explorer destination discovery"""
     destinations = [

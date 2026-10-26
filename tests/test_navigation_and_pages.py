@@ -3,10 +3,6 @@ import pytest
 def test_public_pages_render_status_200(client):
     """Verify all public informational pages render successfully without error."""
     public_urls = [
-        '/',
-        '/home',
-        '/compare',
-        '/explore',
         '/about',
         '/help',
         '/privacy',
@@ -21,8 +17,12 @@ def test_public_pages_render_status_200(client):
 def test_protected_pages_redirect_when_unauthenticated(client):
     """Verify protected dashboard pages redirect unauthorized users to login."""
     protected_urls = [
+        '/',
+        '/home',
         '/weather',
         '/index',
+        '/compare',
+        '/explore',
         '/predictions',
         '/trends',
         '/history',
@@ -41,7 +41,11 @@ def test_protected_pages_redirect_when_unauthenticated(client):
 def test_protected_pages_render_for_authenticated_user(auth_client):
     """Verify protected pages render HTTP 200 for authenticated user."""
     auth_urls = [
+        '/',
+        '/home',
         '/weather',
+        '/compare',
+        '/explore',
         '/predictions',
         '/trends',
         '/history',

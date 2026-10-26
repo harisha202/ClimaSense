@@ -42,9 +42,9 @@ def test_ai_assistant_panel_and_briefing_preserved(auth_client):
     assert soup.find(id='open-assistant-btn') is not None, "open-assistant-btn shortcut must be present"
     assert soup.find(id='briefing-text') is not None, "briefing-text must be preserved"
 
-def test_about_nav_link_removed_from_base_nav(client):
+def test_about_nav_link_removed_from_base_nav(auth_client):
     """Verify that About link is removed from top navigation bar."""
-    res = client.get('/')
+    res = auth_client.get('/')
     assert res.status_code == 200
     soup = BeautifulSoup(res.data, 'html.parser')
     nav_links = [a.get_text(strip=True) for a in soup.select('ul.nav-menu a.nav-link')]
@@ -97,10 +97,10 @@ def test_city_matched_background_delhi_and_tokyo(app):
         assert 'Tokyo' in tokyo_bg.get('title', '') or tokyo_bg.get('city') == 'Tokyo'
         assert tokyo_bg.get('photographer_name') in ['Jezael Melgoza', 'Yu Kato']
 
-def test_visible_unsplash_photographer_credit_sentence_removed(client, auth_client):
+def test_visible_unsplash_photographer_credit_sentence_removed(auth_client):
     """Verify that visible photographer attribution sentences are completely removed from Home and Weather."""
     # Check Home page
-    res_home = client.get('/')
+    res_home = auth_client.get('/')
     assert res_home.status_code == 200
     soup_home = BeautifulSoup(res_home.data, 'html.parser')
     assert soup_home.find(id='hero-photographer-attribution') is None
@@ -133,22 +133,22 @@ def test_dedicated_map_section_in_dashboard(auth_client):
     # Map modal must be removed
     assert soup.find(id='map-modal') is None, "#map-modal must be removed"
 
-def test_page_specific_background_classes_and_3d_accents(client, auth_client):
+def test_page_specific_background_classes_and_3d_accents(auth_client):
     """Verify distinct background identity class and 3D accents for each page."""
     # Home
-    res = client.get('/')
+    res = auth_client.get('/')
     soup = BeautifulSoup(res.data, 'html.parser')
     assert 'page-weather-home' in soup.find('body').get('class', [])
     assert soup.find(class_='accent-home') is not None
     
     # Explore
-    res = client.get('/explore')
+    res = auth_client.get('/explore')
     soup = BeautifulSoup(res.data, 'html.parser')
     assert 'page-weather-explore' in soup.find('body').get('class', [])
     assert soup.find(class_='accent-explore') is not None
     
     # Compare
-    res = client.get('/compare')
+    res = auth_client.get('/compare')
     soup = BeautifulSoup(res.data, 'html.parser')
     assert 'page-weather-compare' in soup.find('body').get('class', [])
     assert soup.find(class_='accent-compare') is not None
