@@ -3925,3 +3925,213 @@ main {
         grid-template-columns: 1fr;
     }
 }
+
+
+/* ============================================================
+   PAGE-SPECIFIC BACKGROUND IDENTITIES FOR MAIN PAGES
+   ============================================================ */
+/* 1. Home Page: Welcoming Alpine Dawn Horizon */
+body.page-weather-home .page-background-layer {
+    background-image: url('https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?auto=format&fit=crop&w=2400&q=90');
+    opacity: 0.95;
+}
+
+/* 2. Weather Page: Vibrant Azure Sky Panorama (Searched city photo takes inline priority) */
+body.page-weather-index .page-background-layer {
+    background-image: url('https://images.unsplash.com/photo-1534088568595-a066f410bcda?auto=format&fit=crop&w=2400&q=90');
+    opacity: 0.95;
+}
+
+/* 3. Explore Cities: Scenic Mediterranean Coastal Travel Horizon */
+body.page-weather-explore .page-background-layer {
+    background-image: url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=2400&q=90');
+    opacity: 0.95;
+}
+
+/* 4. Compare Cities: Sunlit High Alpine Mountain Peak Panorama */
+body.page-weather-compare .page-background-layer {
+    background-image: url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=2400&q=90');
+    opacity: 0.95;
+}
+
+/* 5. Air Quality: Pristine Sunlit Evergreen Forest Canopy */
+body.page-weather-air_quality_page .page-background-layer {
+    background-image: url('https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=2400&q=90');
+    opacity: 0.95;
+}
+
+/* 6. Climate & Predictions: Vast Dynamic Cloudscapes & Atmospheric Horizon */
+body.page-predictions-predictions .page-background-layer,
+body.page-trends-trends .page-background-layer {
+    background-image: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2400&q=90');
+    opacity: 0.95;
+}
+
+/* Page Overlay Active for all page-specific backgrounds */
+body.page-weather-home .page-background-overlay,
+body.page-weather-index .page-background-overlay,
+body.page-weather-explore .page-background-overlay,
+body.page-weather-compare .page-background-overlay,
+body.page-weather-air_quality_page .page-background-overlay,
+body.page-predictions-predictions .page-background-overlay,
+body.page-trends-trends .page-background-overlay {
+    opacity: 1;
+}
+
+/* Sign In & Sign Up pages: Strict Plain White default background */
+body.page-auth-show_login .page-background-layer,
+body.page-auth-signup .page-background-layer {
+    background-image: none !important;
+    opacity: 0 !important;
+}
+
+body.page-auth-show_login .page-background-overlay,
+body.page-auth-signup .page-background-overlay {
+    opacity: 0 !important;
+}
+
+/* Photographer Attribution sentence strictly removed from visible UI */
+.hero-attribution-badge,
+#hero-photographer-attribution {
+    display: none !important;
+}
+
+/* ============================================================
+   DEDICATED FULL-WIDTH MAP SECTION STYLES
+   ============================================================ */
+.dashboard-map-container {
+    max-width: 1100px;
+    width: 96%;
+    margin: 0 auto 1.5rem;
+    position: relative;
+    z-index: 2;
+}
+
+.map-wide-card {
+    width: 100%;
+}
+
+.dashboard-map-frame {
+    height: 420px;
+    width: 100%;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+}
+
+/* ============================================================
+   SUBTLE PAGE-SPECIFIC 3D VISUAL ACCENTS
+   ============================================================ */
+.page-3d-accent {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0.5rem auto 1rem;
+    pointer-events: none;
+}
+
+.ambient-sun-glow-3d {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #FFF9C4 0%, #FBBF24 55%, #F59E0B 100%);
+    box-shadow: 0 0 28px rgba(251, 191, 36, 0.65), 0 4px 14px rgba(245, 158, 11, 0.4);
+    animation: sunPulse3D 4s ease-in-out infinite;
+}
+
+.compass-gyro-3d {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 2px solid rgba(74, 144, 226, 0.4);
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--blue-primary);
+    animation: gyroTilt3D 6s ease-in-out infinite alternate;
+}
+
+.balance-gyro-3d {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 2px solid rgba(74, 144, 226, 0.4);
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: var(--blue-primary);
+    animation: balanceTilt3D 5s ease-in-out infinite alternate;
+}
+
+.purity-leaf-3d {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 2px solid rgba(46, 125, 50, 0.35);
+    box-shadow: 0 6px 20px rgba(46, 125, 50, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: var(--green-accent);
+    animation: floatLeaf3D 4s ease-in-out infinite;
+}
+
+.globe-orbit-3d {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 2px solid rgba(74, 144, 226, 0.4);
+    box-shadow: 0 6px 20px rgba(74, 144, 226, 0.22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    color: var(--blue-primary);
+    animation: orbitRotate3D 12s linear infinite;
+}
+
+@keyframes gyroTilt3D {
+    0% { transform: perspective(400px) rotateY(-14deg) rotateX(8deg); }
+    100% { transform: perspective(400px) rotateY(14deg) rotateX(-8deg); }
+}
+
+@keyframes balanceTilt3D {
+    0% { transform: perspective(400px) rotateZ(-7deg); }
+    100% { transform: perspective(400px) rotateZ(7deg); }
+}
+
+@keyframes floatLeaf3D {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-5px) scale(1.04); }
+}
+
+@keyframes orbitRotate3D {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ambient-sun-glow-3d, .compass-gyro-3d, .balance-gyro-3d,
+    .purity-leaf-3d, .globe-orbit-3d {
+        animation: none !important;
+    }
+}

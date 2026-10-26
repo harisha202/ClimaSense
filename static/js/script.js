@@ -323,10 +323,7 @@ window.resetToPlainWhiteBackground = () => {
     if (heroBg) {
         heroBg.style.backgroundImage = 'none';
     }
-    const attrBox = document.getElementById('hero-photographer-attribution');
-    if (attrBox) {
-        attrBox.classList.add('hidden');
-    }
+
 };
 
 window.fetchBackground = async (city, weatherDesc = '', searchId = 0, country = '') => {
@@ -369,11 +366,7 @@ window.fetchBackground = async (city, weatherDesc = '', searchId = 0, country = 
                 if (discoverThumb) {
                     discoverThumb.src = data.url;
                 }
-                if (attrBox && attrLink) {
-                    attrLink.textContent = data.photographer_name || 'Unsplash Community';
-                    attrLink.href = data.photographer_url || 'https://unsplash.com?utm_source=ClimaSense&utm_medium=referral';
-                    attrBox.classList.remove('hidden');
-                }
+
             };
             img.onerror = () => {
                 if (searchId && searchId !== currentSearchId) return;
@@ -599,24 +592,17 @@ window.renderWeather = (data, comfortScore, comfortLabel) => {
     // Discover Card Title
     setHtml('discover-city-title', `<i class="fa-solid fa-book-open" style="color: var(--blue-primary);"></i> Discover ${data.name}`);
 
-    // Map Button binding
+    // Map Button binding: smooth scroll to dedicated interactive map section
     const mapBtn = document.getElementById('qi-view-map-btn');
     if (mapBtn) {
         mapBtn.onclick = () => {
-            const mapModal = document.getElementById('map-modal');
-            if (mapModal) {
-                mapModal.classList.remove('hidden');
-                if (window.leafletMap) {
-                    setTimeout(() => window.leafletMap.invalidateSize(), 200);
+            const mapSection = document.getElementById('weather-map-section');
+            if (mapSection) {
+                mapSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (window.mapInstance) {
+                    setTimeout(() => window.mapInstance.invalidateSize(), 300);
                 }
             }
-        };
-    }
-    const closeMapModal = document.getElementById('close-map-modal');
-    if (closeMapModal) {
-        closeMapModal.onclick = () => {
-            const mapModal = document.getElementById('map-modal');
-            if (mapModal) mapModal.classList.add('hidden');
         };
     }
 };

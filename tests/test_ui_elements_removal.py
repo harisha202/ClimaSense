@@ -96,3 +96,78 @@ def test_city_matched_background_delhi_and_tokyo(app):
         tokyo_bg = get_background_image('Tokyo', '', 'JP')
         assert 'Tokyo' in tokyo_bg.get('title', '') or tokyo_bg.get('city') == 'Tokyo'
         assert tokyo_bg.get('photographer_name') in ['Jezael Melgoza', 'Yu Kato']
+
+def test_visible_unsplash_photographer_credit_sentence_removed(client, auth_client):
+    """Verify that visible photographer attribution sentences are completely removed from Home and Weather."""
+    # Check Home page
+    res_home = client.get('/')
+    assert res_home.status_code == 200
+    soup_home = BeautifulSoup(res_home.data, 'html.parser')
+    assert soup_home.find(id='hero-photographer-attribution') is None
+    assert 'Photo by' not in soup_home.find('section', class_='home-hero-section').get_text()
+
+    # Check Weather page
+    res_weather = auth_client.get('/weather')
+    assert res_weather.status_code == 200
+    soup_weather = BeautifulSoup(res_weather.data, 'html.parser')
+    assert soup_weather.find(id='hero-photographer-attribution') is None
+    hero = soup_weather.find('section', class_='weather-hero-panorama')
+    assert hero is not None
+    assert 'Photo by' not in hero.get_text()
+
+def test_dedicated_map_section_in_dashboard(auth_client):
+    """Verify dedicated full-width interactive map section exists in dashboard and modal is removed."""
+    res = auth_client.get('/weather')
+    assert res.status_code == 200
+    soup = BeautifulSoup(res.data, 'html.parser')
+    
+    # Map section must exist in dashboard flow
+    map_section = soup.find(id='weather-map-section')
+    assert map_section is not None, "#weather-map-section must exist"
+    assert 'map-wide-card' in map_section.get('class', [])
+    
+    # Inner map container must exist inside map_section
+    inner_map = map_section.find(id='map')
+    assert inner_map is not None, "#map element must be inside #weather-map-section"
+    
+    # Map modal must be removed
+    assert soup.find(id='map-modal') is None, "#map-modal must be removed"
+
+def test_page_specific_background_classes_and_3d_accents(client, auth_client):
+    """Verify distinct background identity class and 3D accents for each page."""
+    # Home
+    res = client.get('/')
+    soup = BeautifulSoup(res.data, 'html.parser')
+    assert 'page-weather-home' in soup.find('body').get('class', [])
+    assert soup.find(class_='accent-home') is not None
+    
+    # Explore
+    res = client.get('/explore')
+    soup = BeautifulSoup(res.data, 'html.parser')
+    assert 'page-weather-explore' in soup.find('body').get('class', [])
+    assert soup.find(class_='accent-explore') is not None
+    
+    # Compare
+    res = client.get('/compare')
+    soup = BeautifulSoup(res.data, 'html.parser')
+    assert 'page-weather-compare' in soup.find('body').get('class', [])
+    assert soup.find(class_='accent-compare') is not None
+    
+    # Weather (auth)
+    res = auth_client.get('/weather')
+    soup = BeautifulSoup(res.data, 'html.parser')
+    assert 'page-weather-index' in soup.find('body').get('class', [])
+    assert soup.find(id='weather-3d-stage') is not None
+    
+    # Air Quality (auth)
+    res = auth_client.get('/air-quality')
+    soup = BeautifulSoup(res.data, 'html.parser')
+    assert 'page-weather-air_quality_page' in soup.find('body').get('class', [])
+    assert soup.find(class_='accent-aqi') is not None
+    
+    # Predictions (auth)
+    res = auth_client.get('/predictions')
+    soup = BeautifulSoup(res.data, 'html.parser')
+    assert 'page-predictions-predictions' in soup.find('body').get('class', [])
+    assert soup.find(class_='accent-climate') is not None
+

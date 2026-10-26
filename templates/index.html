@@ -201,15 +201,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Dynamic Unsplash Photographer Attribution Badge -->
-    <div id="hero-photographer-attribution" class="hero-attribution-badge hidden">
-        <i class="fa-brands fa-unsplash" style="color: #111;"></i>
-        <span>Photo by</span>
-        <a id="hero-photographer-link" href="https://unsplash.com?utm_source=ClimaSense&utm_medium=referral" target="_blank" rel="noopener">Unsplash Community</a>
-        <span>on</span>
-        <a href="https://unsplash.com?utm_source=ClimaSense&utm_medium=referral" target="_blank" rel="noopener">Unsplash</a>
-    </div>
 </section>
 
 <!-- ============================================================
@@ -303,6 +294,24 @@
 <!-- ============================================================
      BOTTOM 2-COLUMN GRID (Discover City + AI Weather Briefing)
      ============================================================ -->
+
+<!-- ============================================================
+     DEDICATED FULL-WIDTH INTERACTIVE CITY RADAR & MAP SECTION
+     ============================================================ -->
+<div class="dashboard-map-container" style="max-width: 1100px; width: 96%; margin: 0 auto 1.5rem; position: relative; z-index: 2;">
+    <div id="weather-map-section" class="dashboard-card-box map-wide-card">
+        <div class="card-header-flex">
+            <span class="card-header-title">
+                <i class="fa-solid fa-map-location-dot" style="color: var(--blue-primary); margin-right: 8px;"></i> 🗺️ <span id="map-section-title">Interactive City Radar & Geographical Map</span>
+            </span>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span class="card-header-badge" id="map-coords-badge" style="background: var(--blue-pale); color: var(--blue-deep); padding: 4px 12px; border-radius: var(--radius-pill); font-weight: 700; font-size: 0.85rem;">📍 Live Coordinates</span>
+            </div>
+        </div>
+        <div id="map" class="dashboard-map-frame" style="height: 420px; width: 100%; border-radius: var(--radius-lg); margin-top: 1rem; border: 1px solid var(--border-subtle); z-index: 1;"></div>
+    </div>
+</div>
+
 <div class="dashboard-bottom-row">
     <!-- Left: Discover City -->
     <div class="dashboard-card-box">
@@ -353,18 +362,6 @@
         </div>
     </div>
 </div>
-
-
-
-<!-- Regional Map Modal (View on Map) -->
-<div id="map-modal" class="modal hidden">
-    <div class="modal-content glass" style="max-width: 800px; width: 90%;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h3 style="margin: 0; color: var(--text-heading);"><i class="fa-solid fa-map-location-dot" style="color: var(--blue-primary); margin-right: 6px;"></i> Regional Meteorological Radar</h3>
-            <span id="close-map-modal" style="cursor: pointer; font-size: 1.5rem; color: var(--text-secondary);">&times;</span>
-        </div>
-        <div id="map" style="height: 400px; width: 100%; border-radius: var(--radius-md);"></div>
-    </div>
 </div>
 
 <!-- Floating AI Weather Chat Button & Panel -->

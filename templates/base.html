@@ -20,7 +20,7 @@
     
     {% block extra_css %}{% endblock %}
 </head>
-<body class="light-theme" data-auth="{{ 'true' if current_user.is_authenticated else 'false' }}">
+<body class="light-theme page-{{ request.endpoint | replace('.', '-') if request.endpoint else 'default' }}" data-endpoint="{{ request.endpoint }}" data-auth="{{ 'true' if current_user.is_authenticated else 'false' }}">
 
     <!-- Persistent Full-Page HD Background Layer (Fixed to Viewport) -->
     <div id="page-background-layer" class="page-background-layer"></div>
